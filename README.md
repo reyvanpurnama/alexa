@@ -116,6 +116,27 @@ Set `WEBHOOK_URL` in `.env` to receive real-time inbound WhatsApp events:
 
 Optional `WEBHOOK_SECRET` will be passed in the `x-webhook-secret` header for signature verification.
 
+## AI Engine
+
+Alexa features a provider-agnostic AI subsystem supporting:
+- **Google Gemini** (`gemini`)
+- **OpenAI** (`openai`)
+- **Groq** (`groq`)
+- **DeepSeek** (`deepseek`)
+- **Local Ollama** (`ollama`)
+- **Custom OpenAI-compatible endpoints** (`custom`)
+
+Configuration in `.env`:
+- `AI_PROVIDER`: Selected provider name (default: `gemini`)
+- `AI_API_KEY`: Provider API key
+- `AI_MODEL`: Model identifier (e.g. `gemini-1.5-flash`, `gpt-4o-mini`, `llama-3.3-70b-versatile`)
+- `AI_SYSTEM_PROMPT`: Persona and business context
+- `AI_AUTO_REPLY`: Set `true` to automatically reply to non-command direct messages
+
+Usage:
+- On-demand: `!ai <question>` (or aliases: `!ask`, `!tanya`)
+- Autonomous: Automatic customer support when `AI_AUTO_REPLY=true`
+
 ## Docker
 
 ```bash

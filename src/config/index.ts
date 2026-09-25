@@ -23,6 +23,19 @@ const envSchema = z.object({
     ),
   FOOTER_TEXT: z.string().optional(),
 
+  // AI Engine (Multi-Provider: gemini | openai | groq | deepseek | ollama | custom)
+  AI_PROVIDER: z.enum(['gemini', 'openai', 'groq', 'deepseek', 'ollama', 'custom']).default('gemini'),
+  AI_API_KEY: z.string().optional().default(''),
+  AI_MODEL: z.string().optional().default(''),
+  AI_BASE_URL: z.string().optional().default(''),
+  AI_SYSTEM_PROMPT: z
+    .string()
+    .default('You are a helpful and polite assistant for our business. Keep responses concise and clear.'),
+  AI_AUTO_REPLY: z
+    .string()
+    .default('false')
+    .transform((val) => val.toLowerCase() === 'true'),
+
   // Webhook Forwarding
   WEBHOOK_URL: z.string().url().optional().or(z.literal('')).default(''),
   WEBHOOK_SECRET: z.string().optional().default(''),

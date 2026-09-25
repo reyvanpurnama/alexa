@@ -5,6 +5,7 @@ import { config } from '../config/index.js';
 import { logger } from '../utils/logger.js';
 
 import { dispatchWebhook } from '../utils/webhook.js';
+import { aiService } from '../services/ai/index.js';
 
 export { type SerializedMessage };
 
@@ -55,5 +56,15 @@ export async function handleIncomingMessage(sock: WASocket, rawMsg: WAMessage): 
     if (executed) return;
   }
 
-  // NOTE: Future AI assistant or conversational fallback can be placed here!
+  // Autonomous AI Auto-Reply (Private chats, non-command)
+  if (!m.hasPrefix && config.AI_AUTO_REPLY && !m.isGroup && m.body) {
+    try {
+      const response = await aiService.generateResponse(m.body);
+      if (response) {
+        await m.reply(response);
+      }
+    } catch (error) {
+      logger.error({ error }, 'Error in autonomous AI auto-reply');
+    }
+  }
 }
