@@ -4,6 +4,8 @@ import { commandManager } from '../core/commandManager.js';
 import { config } from '../config/index.js';
 import { logger } from '../utils/logger.js';
 
+import { dispatchWebhook } from '../utils/webhook.js';
+
 export { type SerializedMessage };
 
 /**
@@ -24,6 +26,21 @@ export async function handleIncomingMessage(sock: WASocket, rawMsg: WAMessage): 
   logger.info(
     `[Inbound] ${m.pushName} (${senderDisplay})${m.isGroup ? ' [group]' : ''}: "${m.body}"`
   );
+
+  // Forward inbound message to external webhook if configured
+  dispatchWebhook('message.received', {
+    messageId: m.id,
+    from: m.from,
+    isGroup: m.isGroup,
+    senderNumber: m.senderNumber,
+    senderLid: m.senderLid,
+    senderName: m.pushName,
+    body: m.body,
+    type: m.type,
+    timestamp: m.timestamp,
+    hasPrefix: m.hasPrefix,
+    command: m.command || null,
+  }).catch(() => {});
 
   // If message has command prefix, dispatch to CommandManager
   if (m.hasPrefix && m.command) {

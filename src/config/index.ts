@@ -23,6 +23,10 @@ const envSchema = z.object({
     ),
   FOOTER_TEXT: z.string().optional(),
 
+  // Webhook Forwarding
+  WEBHOOK_URL: z.string().url().optional().or(z.literal('')).default(''),
+  WEBHOOK_SECRET: z.string().optional().default(''),
+
   // WhatsApp Connection
   SESSION_NAME: z.string().default('alexa_session'),
   USE_PAIRING_CODE: z

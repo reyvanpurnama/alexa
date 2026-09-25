@@ -86,9 +86,35 @@ Interactive Swagger documentation is available at `/docs`.
 - `POST /api/send-media`: Send media attachment (document, image, video, audio)
   - Header: `x-api-key: <API_KEY>`
   - Body: `{"to": "08123456789", "type": "document", "url": "https://example.com/invoice.pdf"}`
+- `POST /api/check-number`: Verify if phone number is registered on WhatsApp
+  - Header: `x-api-key: <API_KEY>`
+  - Body: `{"phoneNumber": "08123456789"}`
+  - Response: `{"success": true, "registered": true, "jid": "628123456789@s.whatsapp.net"}`
 - `POST /api/pairing`: Request 8-digit pairing code
   - Header: `x-api-key: <API_KEY>`
   - Body: `{"phoneNumber": "628123456789"}`
+
+## Webhooks
+
+Set `WEBHOOK_URL` in `.env` to receive real-time inbound WhatsApp events:
+
+```json
+{
+  "event": "message.received",
+  "timestamp": 1727318000,
+  "data": {
+    "messageId": "3EB0...",
+    "from": "628123456789@s.whatsapp.net",
+    "isGroup": false,
+    "senderNumber": "628123456789",
+    "senderName": "Budi",
+    "body": "Hello world",
+    "type": "text"
+  }
+}
+```
+
+Optional `WEBHOOK_SECRET` will be passed in the `x-webhook-secret` header for signature verification.
 
 ## Docker
 

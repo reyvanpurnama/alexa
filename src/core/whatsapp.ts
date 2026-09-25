@@ -235,6 +235,34 @@ export class WhatsAppClient {
   }
 
   /**
+   * Checks if a phone number is registered on WhatsApp
+   */
+  async checkNumber(phoneNumber: string): Promise<{ registered: boolean; jid: string | null }> {
+    if (!this.isConnected() || !this.sock) {
+      throw new Error('WhatsApp is not connected. Current status: ' + this.status);
+    }
+
+    const cleanPhone = formatPhoneNumberForPairing(phoneNumber);
+    if (!cleanPhone) {
+      throw new Error('Invalid phone number format');
+    }
+
+    try {
+      const results = await this.sock.onWhatsApp(cleanPhone);
+      const target = results?.[0];
+
+      if (target?.exists) {
+        return { registered: true, jid: target.jid };
+      }
+
+      return { registered: false, jid: null };
+    } catch (err) {
+      logger.error({ err, phoneNumber }, 'Error checking WhatsApp number');
+      throw err;
+    }
+  }
+
+  /**
    * Send a text message
    */
   async sendText(target: string, text: string, options: { queued?: boolean } = { queued: true }) {
