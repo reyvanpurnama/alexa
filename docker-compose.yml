@@ -1,0 +1,11 @@
+services:
+  alexa:
+    build: .
+    container_name: alexa-bot
+    restart: unless-stopped
+    ports:
+      - "${PORT:-3000}:3000"
+    env_file:
+      - .env
+    volumes:
+      - ./sessions:/app/sessions
