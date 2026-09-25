@@ -35,6 +35,8 @@ const envSchema = z.object({
     .string()
     .default('false')
     .transform((val) => val.toLowerCase() === 'true'),
+  AI_MAX_HISTORY: z.coerce.number().default(6),
+  AI_SESSION_TIMEOUT_MIN: z.coerce.number().default(15),
 
   // Webhook Forwarding
   WEBHOOK_URL: z.string().url().optional().or(z.literal('')).default(''),

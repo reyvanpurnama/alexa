@@ -1,41 +1,61 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import OpenAI from 'openai';
 import { config } from '../../config/index.js';
-import { logger } from '../../utils/logger.js';
+import { conversationMemory, type ChatMessage } from './memory.js';
+
+export { conversationMemory, type ChatMessage };
 
 export interface AIOptions {
   systemPrompt?: string;
   maxTokens?: number;
+  sessionId?: string;
 }
 
 class AIService {
   /**
-   * Generates text response using the configured AI provider
+   * Generates text response using the configured AI provider,
+   * with multi-turn conversation memory support if sessionId is provided.
    */
   async generateResponse(prompt: string, options?: AIOptions): Promise<string> {
     const provider = config.AI_PROVIDER;
     const systemPrompt = options?.systemPrompt || config.AI_SYSTEM_PROMPT;
+    const history = options?.sessionId ? conversationMemory.getHistory(options.sessionId) : [];
+
+    let response = '';
 
     switch (provider) {
       case 'gemini':
-        return await this.generateGemini(prompt, systemPrompt);
+        response = await this.generateGemini(prompt, systemPrompt, history);
+        break;
 
       case 'openai':
       case 'groq':
       case 'deepseek':
       case 'ollama':
       case 'custom':
-        return await this.generateOpenAICompatible(prompt, systemPrompt, provider);
+        response = await this.generateOpenAICompatible(prompt, systemPrompt, provider, history);
+        break;
 
       default:
         throw new Error(`Unsupported AI provider: ${provider}`);
     }
+
+    if (options?.sessionId && response) {
+      conversationMemory.addMessage(options.sessionId, 'user', prompt);
+      conversationMemory.addMessage(options.sessionId, 'assistant', response);
+    }
+
+    return response;
   }
 
   /**
-   * Google Gemini Implementation
+   * Google Gemini Implementation with chat history support
    */
-  private async generateGemini(prompt: string, systemPrompt: string): Promise<string> {
+  private async generateGemini(
+    prompt: string,
+    systemPrompt: string,
+    history: ChatMessage[]
+  ): Promise<string> {
     const apiKey = config.AI_API_KEY;
     if (!apiKey) {
       throw new Error('AI_API_KEY is not set in .env for Gemini provider.');
@@ -49,9 +69,24 @@ class AIService {
       systemInstruction: systemPrompt ? { role: 'system', parts: [{ text: systemPrompt }] } : undefined,
     });
 
+    if (history.length > 0) {
+      const geminiHistory = history.map((item) => ({
+        role: item.role === 'assistant' ? 'model' : 'user',
+        parts: [{ text: item.content }],
+      }));
+
+      const chat = model.startChat({
+        history: geminiHistory,
+      });
+
+      const result = await chat.sendMessage(prompt);
+      const res = await result.response;
+      return res.text().trim();
+    }
+
     const result = await model.generateContent(prompt);
-    const response = await result.response;
-    return response.text().trim();
+    const res = await result.response;
+    return res.text().trim();
   }
 
   /**
@@ -60,7 +95,8 @@ class AIService {
   private async generateOpenAICompatible(
     prompt: string,
     systemPrompt: string,
-    provider: 'openai' | 'groq' | 'deepseek' | 'ollama' | 'custom'
+    provider: 'openai' | 'groq' | 'deepseek' | 'ollama' | 'custom',
+    history: ChatMessage[]
   ): Promise<string> {
     let baseURL: string | undefined = config.AI_BASE_URL || undefined;
     let apiKey: string = config.AI_API_KEY;
@@ -108,6 +144,13 @@ class AIService {
     if (systemPrompt) {
       messages.push({ role: 'system', content: systemPrompt });
     }
+
+    // Append prior sliding-window conversation turns
+    for (const h of history) {
+      messages.push({ role: h.role, content: h.content });
+    }
+
+    // Append current user prompt
     messages.push({ role: 'user', content: prompt });
 
     const completion = await client.chat.completions.create({

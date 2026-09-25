@@ -15,7 +15,8 @@ const askCommand: Command = {
     }
 
     try {
-      const answer = await aiService.generateResponse(question);
+      const sessionId = m.isGroup ? `${m.from}:${m.senderNumber}` : m.senderNumber;
+      const answer = await aiService.generateResponse(question, { sessionId });
       await m.reply(answer);
     } catch (error) {
       logger.error({ error }, 'Error generating AI response');

@@ -59,7 +59,7 @@ export async function handleIncomingMessage(sock: WASocket, rawMsg: WAMessage): 
   // Autonomous AI Auto-Reply (Private chats, non-command)
   if (!m.hasPrefix && config.AI_AUTO_REPLY && !m.isGroup && m.body) {
     try {
-      const response = await aiService.generateResponse(m.body);
+      const response = await aiService.generateResponse(m.body, { sessionId: m.senderNumber });
       if (response) {
         await m.reply(response);
       }
