@@ -69,7 +69,7 @@ class AIService {
     switch (provider) {
       case 'groq':
         baseURL = baseURL || 'https://api.groq.com/openai/v1';
-        defaultModel = 'llama-3.3-70b-versatile';
+        defaultModel = 'openai/gpt-oss-120b';
         break;
       case 'deepseek':
         baseURL = baseURL || 'https://api.deepseek.com';
