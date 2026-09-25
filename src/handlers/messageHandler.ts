@@ -5,7 +5,7 @@ import { config } from '../config/index.js';
 import { logger } from '../utils/logger.js';
 
 import { dispatchWebhook } from '../utils/webhook.js';
-import { aiService } from '../services/ai/index.js';
+import { aiService, takeoverManager } from '../services/ai/index.js';
 
 export { type SerializedMessage };
 
@@ -20,8 +20,13 @@ export async function handleIncomingMessage(sock: WASocket, rawMsg: WAMessage): 
   const m = await serializeMessage(sock, rawMsg);
   if (!m) return;
 
-  // Do not reply to own messages
-  if (m.fromMe) return;
+  // If owner manually replied from their phone in a private chat, auto-snooze AI for 30m
+  if (m.fromMe) {
+    if (!m.isGroup && m.from) {
+      takeoverManager.mute(m.from, 30, 'owner_manual_reply');
+    }
+    return;
+  }
 
   const senderDisplay = m.isLid && m.senderLid ? `${m.senderNumber} (lid)` : m.senderNumber;
   logger.info(
@@ -58,6 +63,11 @@ export async function handleIncomingMessage(sock: WASocket, rawMsg: WAMessage): 
 
   // Autonomous AI Auto-Reply (Private chats, non-command)
   if (!m.hasPrefix && config.AI_AUTO_REPLY && !m.isGroup && m.body) {
+    // If chat is currently muted or handled by human agent, skip AI reply
+    if (takeoverManager.isMuted(m.senderNumber) || takeoverManager.isMuted(m.from)) {
+      return;
+    }
+
     try {
       const response = await aiService.generateResponse(m.body, { sessionId: m.senderNumber });
       if (response) {

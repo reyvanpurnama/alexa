@@ -11,7 +11,7 @@ const envSchema = z.object({
 
   // Bot Identity & Behavior
   BOT_NAME: z.string().default('Alexa'),
-  PREFIX: z.string().default('!'),
+  PREFIX: z.string().default('/'),
   OWNER_NUMBERS: z
     .string()
     .default('')

@@ -2,8 +2,10 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 import OpenAI from 'openai';
 import { config } from '../../config/index.js';
 import { conversationMemory, type ChatMessage } from './memory.js';
+import { takeoverManager } from './takeover.js';
+import { aiTools, executeTool } from './tools.js';
 
-export { conversationMemory, type ChatMessage };
+export { conversationMemory, takeoverManager, type ChatMessage };
 
 export interface AIOptions {
   systemPrompt?: string;
@@ -14,7 +16,7 @@ export interface AIOptions {
 class AIService {
   /**
    * Generates text response using the configured AI provider,
-   * with multi-turn conversation memory support if sessionId is provided.
+   * with multi-turn conversation memory and autonomous tool calling support.
    */
   async generateResponse(prompt: string, options?: AIOptions): Promise<string> {
     const provider = config.AI_PROVIDER;
@@ -33,7 +35,13 @@ class AIService {
       case 'deepseek':
       case 'ollama':
       case 'custom':
-        response = await this.generateOpenAICompatible(prompt, systemPrompt, provider, history);
+        response = await this.generateOpenAICompatible(
+          prompt,
+          systemPrompt,
+          provider,
+          history,
+          options?.sessionId
+        );
         break;
 
       default:
@@ -90,13 +98,14 @@ class AIService {
   }
 
   /**
-   * Universal OpenAI-compatible Implementation (OpenAI, Groq, DeepSeek, Ollama, Custom)
+   * Universal OpenAI-compatible Implementation with native Tool / Function Calling support
    */
   private async generateOpenAICompatible(
     prompt: string,
     systemPrompt: string,
     provider: 'openai' | 'groq' | 'deepseek' | 'ollama' | 'custom',
-    history: ChatMessage[]
+    history: ChatMessage[],
+    sessionId?: string
   ): Promise<string> {
     let baseURL: string | undefined = config.AI_BASE_URL || undefined;
     let apiKey: string = config.AI_API_KEY;
@@ -153,13 +162,54 @@ class AIService {
     // Append current user prompt
     messages.push({ role: 'user', content: prompt });
 
+    const supportsTools = provider === 'groq' || provider === 'openai';
+
     const completion = await client.chat.completions.create({
       model,
       messages,
       temperature: 0.7,
+      tools: supportsTools ? aiTools : undefined,
+      tool_choice: supportsTools ? 'auto' : undefined,
     });
 
-    return completion.choices[0]?.message?.content?.trim() || '';
+    const choice = completion.choices[0]?.message;
+    if (!choice) return '';
+
+    // Handle Function / Tool calling if requested by model
+    if (choice.tool_calls && choice.tool_calls.length > 0) {
+      messages.push(choice);
+
+      for (const toolCall of choice.tool_calls) {
+        if (toolCall.type === 'function') {
+          let parsedArgs = {};
+          try {
+            parsedArgs = JSON.parse(toolCall.function.arguments || '{}');
+          } catch {}
+
+          const result = await executeTool(toolCall.function.name, parsedArgs, {
+            sessionId,
+            senderNumber: sessionId,
+          });
+
+          messages.push({
+            role: 'tool',
+            tool_call_id: toolCall.id,
+            content: result,
+          });
+        }
+      }
+
+      // Execute secondary completion with tool output
+      const followUp = await client.chat.completions.create({
+        model,
+        messages,
+        temperature: 0.7,
+      });
+
+      return followUp.choices[0]?.message?.content?.trim() || '';
+    }
+
+    return choice.content?.trim() || '';
   }
 }
 

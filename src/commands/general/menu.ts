@@ -9,9 +9,12 @@ const menuCommand: Command = {
   execute: async ({ m, config }) => {
     const allCommands = commandManager.getAllCommands();
 
-    // Group commands by category
+    // Group commands by category (filtering out hidden and unauthorized owner commands)
     const categories: Record<string, Command[]> = {};
     for (const cmd of allCommands) {
+      if (cmd.hidden) continue;
+      if (cmd.ownerOnly && !m.isOwner) continue;
+
       const rawCat = cmd.category || 'general';
       const cat = rawCat.charAt(0).toUpperCase() + rawCat.slice(1);
       if (!categories[cat]) categories[cat] = [];

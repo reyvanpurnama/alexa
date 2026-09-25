@@ -18,5 +18,6 @@ export interface Command {
   ownerOnly?: boolean;
   groupOnly?: boolean;
   privateOnly?: boolean;
+  hidden?: boolean;
   execute: (ctx: CommandContext) => Promise<void>;
 }
