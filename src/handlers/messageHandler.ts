@@ -20,9 +20,9 @@ export async function handleIncomingMessage(sock: WASocket, rawMsg: WAMessage): 
   // Do not reply to own messages
   if (m.fromMe) return;
 
-  const senderDisplay = m.isLid && m.senderLid ? `${m.senderNumber} (LID)` : m.senderNumber;
+  const senderDisplay = m.isLid && m.senderLid ? `${m.senderNumber} (lid)` : m.senderNumber;
   logger.info(
-    `📩 [Inbound] ${m.pushName} (${senderDisplay})${m.isGroup ? ' [GROUP]' : ''}: "${m.body}"`
+    `[Inbound] ${m.pushName} (${senderDisplay})${m.isGroup ? ' [group]' : ''}: "${m.body}"`
   );
 
   // If message has command prefix, dispatch to CommandManager

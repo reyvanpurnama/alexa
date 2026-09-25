@@ -3,8 +3,8 @@ import { commandManager } from '../../core/commandManager.js';
 
 const menuCommand: Command = {
   name: 'menu',
-  aliases: ['help', 'start'],
-  description: 'Display all available commands and bot features',
+  aliases: ['help'],
+  description: 'List available commands',
   category: 'general',
   execute: async ({ m, config }) => {
     const allCommands = commandManager.getAllCommands();
@@ -12,30 +12,30 @@ const menuCommand: Command = {
     // Group commands by category
     const categories: Record<string, Command[]> = {};
     for (const cmd of allCommands) {
-      const cat = (cmd.category || 'general').toUpperCase();
+      const rawCat = cmd.category || 'general';
+      const cat = rawCat.charAt(0).toUpperCase() + rawCat.slice(1);
       if (!categories[cat]) categories[cat] = [];
       categories[cat].push(cmd);
     }
 
     const lines: string[] = [
-      `🤖 *${config.BOT_NAME.toUpperCase()} COMMAND CENTER*`,
-      `Prefix: \`${config.PREFIX}\``,
+      `*${config.BOT_NAME}*`,
+      'Available commands.',
       '',
     ];
 
     for (const [catName, cmds] of Object.entries(categories)) {
-      lines.push(`📂 *${catName}*`);
+      lines.push(`*${catName}*`);
       for (const cmd of cmds) {
-        const aliasText = cmd.aliases?.length ? ` (${cmd.aliases.join(', ')})` : '';
-        const badge = cmd.ownerOnly ? ' 👑' : '';
-        lines.push(`• \`${config.PREFIX}${cmd.name}\`${aliasText} - ${cmd.description}${badge}`);
+        const badge = cmd.ownerOnly ? ' _(owner)_' : '';
+        lines.push(`\`${config.PREFIX}${cmd.name}\` — ${cmd.description}${badge}`);
       }
       lines.push('');
     }
 
-    lines.push(`💡 _Type \`${config.PREFIX}info\` to view bot details._`);
+    lines.push(`_Use \`${config.PREFIX}\` before any command._`);
 
-    await m.reply(lines.join('\n'), { withFooter: true });
+    await m.reply(lines.join('\n'));
   },
 };
 

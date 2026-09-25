@@ -58,7 +58,7 @@ class CommandManager {
     }
 
     this.isLoaded = true;
-    logger.info(`🧩 Loaded ${this.commands.size} commands (${this.aliases.size} aliases) successfully`);
+    logger.info(`Loaded ${this.commands.size} commands (${this.aliases.size} aliases)`);
   }
 
   getCommand(name: string): Command | undefined {
@@ -84,19 +84,19 @@ class CommandManager {
 
     // Middleware: Owner only check
     if (cmd.ownerOnly && !ctx.m.isOwner) {
-      await ctx.m.reply('⛔ *Access Denied:* This command is restricted to the bot owner.');
+      await ctx.m.reply('This command is restricted to the bot owner.');
       return true;
     }
 
     // Middleware: Group only check
     if (cmd.groupOnly && !ctx.m.isGroup) {
-      await ctx.m.reply('⚠️ This command can only be used inside a group.');
+      await ctx.m.reply('This command can only be used in groups.');
       return true;
     }
 
     // Middleware: Private only check
     if (cmd.privateOnly && ctx.m.isGroup) {
-      await ctx.m.reply('⚠️ This command can only be used in private chat.');
+      await ctx.m.reply('This command can only be used in direct messages.');
       return true;
     }
 
@@ -105,7 +105,7 @@ class CommandManager {
       return true;
     } catch (error) {
       logger.error({ error, command: cmd.name }, 'Error executing command');
-      await ctx.m.reply(`❌ An error occurred while executing \`${config.PREFIX}${cmd.name}\`.`);
+      await ctx.m.reply(`Unable to execute \`${config.PREFIX}${cmd.name}\`. Please try again later.`);
       return true;
     }
   }

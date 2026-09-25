@@ -46,5 +46,5 @@ const data = parsed.data;
 
 export const config = {
   ...data,
-  FOOTER_TEXT: data.FOOTER_TEXT || `⚡ Powered by ${data.BOT_NAME}`,
+  FOOTER_TEXT: data.FOOTER_TEXT || '',
 };

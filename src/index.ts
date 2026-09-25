@@ -1,15 +1,11 @@
+import { config } from './config/index.js';
 import { waClient } from './core/whatsapp.js';
 import { commandManager } from './core/commandManager.js';
 import { startServer } from './server/index.js';
 import { logger } from './utils/logger.js';
 
 async function bootstrap() {
-  console.log(`
-  ╔═══════════════════════════════════════════════════╗
-  ║       ALEXA - WHATSAPP AUTOMATION & NOTIFIER      ║
-  ║             Powered by Baileys & Fastify          ║
-  ╚═══════════════════════════════════════════════════╝
-  `);
+  logger.info(`Starting ${config.BOT_NAME}...`);
 
   try {
     // 1. Preload modular commands

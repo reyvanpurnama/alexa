@@ -102,8 +102,8 @@ export async function startServer() {
 
   try {
     await app.listen({ port: config.PORT, host: config.HOST });
-    logger.info(`🌐 REST API Server running at http://${config.HOST}:${config.PORT}`);
-    logger.info(`🔒 API Key protection active: x-api-key: ${config.API_KEY}`);
+    logger.info(`HTTP server listening at http://${config.HOST}:${config.PORT}`);
+    logger.info('API key authentication enabled');
   } catch (err) {
     logger.error({ err }, 'Failed to start Fastify server');
     process.exit(1);

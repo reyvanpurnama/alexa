@@ -2,18 +2,13 @@ import type { Command } from '../../types/command.js';
 
 const pingCommand: Command = {
   name: 'ping',
-  aliases: ['p', 'speed'],
-  description: 'Check bot responsiveness and latency',
+  aliases: ['p'],
+  description: 'Check connection latency',
   category: 'general',
-  execute: async ({ m, config }) => {
+  execute: async ({ m }) => {
     const start = Date.now();
-    await m.react('🏓');
     const latency = Date.now() - start;
-
-    await m.reply(
-      `🏓 *Pong!*\n• Bot: *${config.BOT_NAME}*\n• Speed: *${latency}ms*`,
-      { withFooter: true }
-    );
+    await m.reply(`Pong — ${latency}ms`);
   },
 };
 

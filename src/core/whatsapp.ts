@@ -98,7 +98,7 @@ export class WhatsAppClient {
           await this.handlePairingFlow();
         } else {
           this.status = 'QR_READY';
-          logger.info('📱 Scan the QR Code below with your WhatsApp:');
+          logger.info('Scan QR code in WhatsApp Linked Devices:');
           qrcode.generate(qr, { small: true });
         }
       }
@@ -111,12 +111,12 @@ export class WhatsAppClient {
         const statusCode = (lastDisconnect?.error as Boom)?.output?.statusCode;
         const reason = DisconnectReason[statusCode as unknown as keyof typeof DisconnectReason] || statusCode;
 
-        logger.warn(`WhatsApp connection closed. Reason: ${reason} (${statusCode})`);
+        logger.warn(`Connection closed (${reason}: ${statusCode})`);
 
         const isLoggedOut = statusCode === DisconnectReason.loggedOut;
 
         if (isLoggedOut) {
-          logger.error('❌ Device was logged out. Please clear session folder and re-scan QR/Pairing.');
+          logger.error('Device logged out. Session directory cleared.');
           // Clean up session if logged out
           try {
             fs.rmSync(this.sessionsDir, { recursive: true, force: true });
@@ -142,7 +142,7 @@ export class WhatsAppClient {
           : null;
 
         logger.info(
-          `🚀 WhatsApp connected successfully! Account: ${this.user?.name || 'WA Gateway'} (+${this.user?.id})`
+          `Connected as ${this.user?.name || 'Gateway'} (+${this.user?.id})`
         );
       }
     });
@@ -178,10 +178,7 @@ export class WhatsAppClient {
     const code = await this.sock.requestPairingCode(cleanPhone);
     this.pairingCode = code;
 
-    logger.info('==========================================');
-    logger.info(`🔑 WA PAIRING CODE FOR +${cleanPhone}:  ${code}`);
-    logger.info('   Enter this 8-digit code on WhatsApp -> Linked Devices -> Link with Phone Number');
-    logger.info('==========================================');
+    logger.info(`Pairing code for +${cleanPhone}: ${code}`);
 
     return code;
   }
@@ -193,7 +190,7 @@ export class WhatsAppClient {
     if (!phone && process.stdin.isTTY) {
       const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
       phone = await new Promise<string>((resolve) => {
-        rl.question('📲 Enter your WhatsApp phone number for Pairing Code (e.g. 628123456789): ', (ans) => {
+        rl.question('Enter phone number for pairing (e.g. 628123456789): ', (ans) => {
           rl.close();
           resolve(ans.trim());
         });
@@ -208,7 +205,7 @@ export class WhatsAppClient {
       }
     } else {
       logger.warn(
-        'USE_PAIRING_CODE is enabled, but no phone number provided. Set PAIRING_PHONE_NUMBER in .env or call POST /api/pairing'
+        'USE_PAIRING_CODE enabled without phone number. Set PAIRING_PHONE_NUMBER or use POST /api/pairing'
       );
     }
   }
@@ -219,12 +216,12 @@ export class WhatsAppClient {
 
     this.reconnectAttempts++;
     if (this.reconnectAttempts > this.maxReconnectAttempts) {
-      logger.error('❌ Max reconnect attempts reached. Please check network or restart manually.');
+      logger.error('Max reconnect attempts reached. Please restart manually.');
       return;
     }
 
     const delay = Math.min(3000 * this.reconnectAttempts, 20000);
-    logger.info(`🔄 Reconnecting to WhatsApp in ${delay / 1000}s (Attempt ${this.reconnectAttempts}/${this.maxReconnectAttempts})...`);
+    logger.info(`Reconnecting in ${delay / 1000}s (attempt ${this.reconnectAttempts}/${this.maxReconnectAttempts})`);
 
     setTimeout(async () => {
       this.isReconnecting = false;
@@ -248,7 +245,7 @@ export class WhatsAppClient {
     const jid = formatToWhatsAppJid(target);
 
     const task = async () => {
-      logger.info(`📤 Sending text message to ${jid}`);
+      logger.info(`Sending message to ${jid}`);
       return await this.sock!.sendMessage(jid, { text });
     };
 
@@ -311,7 +308,7 @@ export class WhatsAppClient {
     }
 
     const task = async () => {
-      logger.info(`📤 Sending ${params.type} media to ${jid}`);
+      logger.info(`Sending ${params.type} to ${jid}`);
       return await this.sock!.sendMessage(jid, mediaContent);
     };
 
