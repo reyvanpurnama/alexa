@@ -1,5 +1,3 @@
-import path from 'path';
-import fs from 'fs';
 import readline from 'readline';
 import {
   makeWASocket,
@@ -8,16 +6,16 @@ import {
   fetchLatestBaileysVersion,
   Browsers,
   type WASocket,
-  type AnyMessageContent,
   type ConnectionState,
 } from '@whiskeysockets/baileys';
 import { Boom } from '@hapi/boom';
 import qrcode from 'qrcode-terminal';
 import { config } from '../config/index.js';
 import { logger, baileysLogger } from '../utils/logger.js';
-import { formatToWhatsAppJid, formatPhoneNumberForPairing } from '../utils/jid.js';
-import { messageQueue } from '../queue/messageQueue.js';
+import { formatPhoneNumberForPairing } from '../utils/jid.js';
 import { handleIncomingMessage } from '../handlers/messageHandler.js';
+import { sessionManager, type SessionProfile } from './sessionManager.js';
+import { messageSender, type SendMediaParams } from './messageSender.js';
 
 export type WhatsAppStatus =
   | 'INITIALIZING'
@@ -26,14 +24,7 @@ export type WhatsAppStatus =
   | 'CONNECTED'
   | 'DISCONNECTED';
 
-export interface SendMediaParams {
-  type: 'image' | 'video' | 'audio' | 'document';
-  url?: string;
-  buffer?: Buffer;
-  caption?: string;
-  fileName?: string;
-  mimetype?: string;
-}
+export { type SendMediaParams, type SessionProfile };
 
 export class WhatsAppClient {
   private sock: WASocket | null = null;
@@ -47,15 +38,12 @@ export class WhatsAppClient {
   private isExplicitLogout = false;
   public user: { id: string; name?: string } | null = null;
 
-  private baseSessionsDir = path.join(process.cwd(), 'sessions');
-  private currentSessionName: string = config.SESSION_NAME || 'alexa_session';
-
   get sessionsDir(): string {
-    return path.join(this.baseSessionsDir, this.currentSessionName);
+    return sessionManager.getSessionDir();
   }
 
   getActiveSessionName(): string {
-    return this.currentSessionName;
+    return sessionManager.getActiveSessionName();
   }
 
   getSocket(): WASocket | null {
@@ -79,11 +67,8 @@ export class WhatsAppClient {
   }
 
   async initialize(): Promise<void> {
-    if (!fs.existsSync(this.sessionsDir)) {
-      fs.mkdirSync(this.sessionsDir, { recursive: true });
-    }
-
-    const { state, saveCreds } = await useMultiFileAuthState(this.sessionsDir);
+    const sessionDir = sessionManager.getSessionDir();
+    const { state, saveCreds } = await useMultiFileAuthState(sessionDir);
     const { version, isLatest } = await fetchLatestBaileysVersion();
 
     logger.info(`Starting Baileys v${version.join('.')} (Latest: ${isLatest})...`);
@@ -91,7 +76,7 @@ export class WhatsAppClient {
     this.sock = makeWASocket({
       version,
       logger: baileysLogger,
-      printQRInTerminal: false, // Handled manually for pairing code support
+      printQRInTerminal: false,
       auth: state,
       browser: Browsers.ubuntu('Chrome'),
       syncFullHistory: false,
@@ -101,14 +86,13 @@ export class WhatsAppClient {
 
     this.sock.ev.on('creds.update', saveCreds);
 
-    // Connection lifecycle
+    // Connection lifecycle events
     this.sock.ev.on('connection.update', async (update: Partial<ConnectionState>) => {
       const { connection, lastDisconnect, qr } = update;
 
       if (qr) {
         this.qrCode = qr;
-        
-        // If pairing code mode is enabled and user is not registered yet
+
         if (config.USE_PAIRING_CODE && !state.creds.registered) {
           await this.handlePairingFlow();
         } else {
@@ -133,17 +117,9 @@ export class WhatsAppClient {
 
         logger.warn(`Connection closed (${reason}: ${statusCode})`);
 
-        const isLoggedOut = statusCode === DisconnectReason.loggedOut;
-
-        if (isLoggedOut) {
+        if (statusCode === DisconnectReason.loggedOut) {
           logger.error('Device logged out. Session directory cleared.');
-          // Clean up session if logged out
-          try {
-            fs.rmSync(this.sessionsDir, { recursive: true, force: true });
-            fs.mkdirSync(this.sessionsDir, { recursive: true });
-          } catch (e) {
-            logger.error({ err: e }, 'Failed to clear session dir');
-          }
+          sessionManager.wipeSession();
         } else {
           this.scheduleReconnect();
         }
@@ -162,13 +138,11 @@ export class WhatsAppClient {
             }
           : null;
 
-        logger.info(
-          `Connected as ${this.user?.name || 'Gateway'} (+${this.user?.id})`
-        );
+        logger.info(`Connected as ${this.user?.name || 'Gateway'} (+${this.user?.id})`);
       }
     });
 
-    // Inbound messages
+    // Inbound messages dispatcher
     this.sock.ev.on('messages.upsert', async ({ messages, type }) => {
       if (type !== 'notify') return;
       for (const msg of messages) {
@@ -184,10 +158,7 @@ export class WhatsAppClient {
   }
 
   /**
-   * Generates WhatsApp 8-digit pairing code for phone-number based linking.
-   * If a sessionName is provided, hot-swaps to that session profile first.
-   * If the current session is already linked to a different phone number,
-   * performs a clean logout/reset so the new phone number can pair smoothly.
+   * Generates WhatsApp 8-digit pairing code for phone-number based linking
    */
   async requestPairing(phoneNumber: string, sessionName?: string): Promise<string> {
     const cleanPhone = formatPhoneNumberForPairing(phoneNumber);
@@ -195,7 +166,7 @@ export class WhatsAppClient {
       throw new Error('Invalid phone number for pairing');
     }
 
-    if (sessionName && sessionName.trim() && sessionName.trim() !== this.currentSessionName) {
+    if (sessionName && sessionName.trim() && sessionName.trim() !== this.getActiveSessionName()) {
       await this.switchSession(sessionName.trim());
     } else if (this.sock && (this.isConnected() || this.user) && this.user?.id !== cleanPhone) {
       logger.info(
@@ -217,13 +188,11 @@ export class WhatsAppClient {
     this.pairingCode = code;
 
     logger.info(`Pairing code for +${cleanPhone}: ${code}`);
-
     return code;
   }
 
   /**
-   * Gracefully logs out, destroys the Baileys session, and re-initializes
-   * the socket into a clean state ready for a new pairing code or QR scan.
+   * Disconnects active socket and resets credentials for new linking
    */
   async logout(): Promise<void> {
     logger.info('[WhatsApp] Initiating zero-downtime session logout and reset...');
@@ -236,7 +205,6 @@ export class WhatsAppClient {
     this.isReconnecting = false;
     this.reconnectAttempts = 0;
 
-    // 1. Cleanly terminate Baileys socket if active
     if (this.sock) {
       try {
         await this.sock.logout();
@@ -249,106 +217,41 @@ export class WhatsAppClient {
       this.sock = null;
     }
 
-    // 2. Wipe the local multi-file credentials directory
-    try {
-      if (fs.existsSync(this.sessionsDir)) {
-        fs.rmSync(this.sessionsDir, { recursive: true, force: true });
-        fs.mkdirSync(this.sessionsDir, { recursive: true });
-        logger.info(`[WhatsApp] Deleted session files in ${this.sessionsDir}`);
-      }
-    } catch (err) {
-      logger.error({ err }, 'Failed to remove session directory');
-    }
+    sessionManager.wipeSession();
 
-    // 3. Reset internal status
     this.status = 'DISCONNECTED';
     this.qrCode = null;
     this.pairingCode = null;
     this.user = null;
     this.isExplicitLogout = false;
 
-    // 4. Spin up fresh socket ready for pairing or QR without restarting Fastify
     logger.info('[WhatsApp] Re-initializing socket for new device linking...');
     await this.initialize();
   }
 
   /**
-   * Scans the sessions directory and retrieves all saved session profiles with metadata
+   * Session Management Facade
    */
-  listSessions(): Array<{
-    name: string;
-    isActive: boolean;
-    registered: boolean;
-    phoneNumber: string | null;
-    pushName: string | null;
-  }> {
-    if (!fs.existsSync(this.baseSessionsDir)) {
-      return [];
-    }
-
-    const entries = fs.readdirSync(this.baseSessionsDir, { withFileTypes: true });
-    const result: Array<{
-      name: string;
-      isActive: boolean;
-      registered: boolean;
-      phoneNumber: string | null;
-      pushName: string | null;
-    }> = [];
-
-    for (const entry of entries) {
-      if (entry.isDirectory()) {
-        const sessionName = entry.name;
-        const credsPath = path.join(this.baseSessionsDir, sessionName, 'creds.json');
-        let registered = false;
-        let phoneNumber: string | null = null;
-        let pushName: string | null = null;
-
-        if (fs.existsSync(credsPath)) {
-          try {
-            const raw = fs.readFileSync(credsPath, 'utf-8');
-            const data = JSON.parse(raw);
-            registered = Boolean(data.registered);
-            if (data.me?.id) {
-              phoneNumber = data.me.id.split(':')[0].replace(/\D/g, '') || null;
-            }
-            if (data.me?.name) {
-              pushName = data.me.name;
-            }
-          } catch {}
-        }
-
-        result.push({
-          name: sessionName,
-          isActive: sessionName === this.currentSessionName,
-          registered,
-          phoneNumber,
-          pushName,
-        });
-      }
-    }
-
-    return result;
+  listSessions(): SessionProfile[] {
+    return sessionManager.listSessions();
   }
 
-  /**
-   * Hot-swaps the active WhatsApp connection to a different session profile
-   * without deleting or losing credentials of the previously active session.
-   */
+  deleteSession(sessionName: string): boolean {
+    return sessionManager.deleteSession(sessionName);
+  }
+
   async switchSession(sessionName: string): Promise<{
     success: boolean;
     sessionName: string;
     isNew: boolean;
   }> {
-    const cleanName = sessionName.trim().replace(/[^a-zA-Z0-9_-]/g, '');
-    if (!cleanName) {
-      throw new Error('Invalid session name. Use alphanumeric characters, hyphens, and underscores.');
-    }
+    const cleanName = sessionManager.sanitizeSessionName(sessionName);
 
-    if (cleanName === this.currentSessionName && this.isConnected()) {
+    if (cleanName === this.getActiveSessionName() && this.isConnected()) {
       return { success: true, sessionName: cleanName, isNew: false };
     }
 
-    logger.info(`[WhatsApp] Hot-swapping session from "${this.currentSessionName}" to "${cleanName}"...`);
+    logger.info(`[WhatsApp] Hot-swapping session from "${this.getActiveSessionName()}" to "${cleanName}"...`);
     this.isExplicitLogout = true;
 
     if (this.reconnectTimer) {
@@ -358,7 +261,6 @@ export class WhatsAppClient {
     this.isReconnecting = false;
     this.reconnectAttempts = 0;
 
-    // Gracefully terminate current Baileys socket WITHOUT deleting files
     if (this.sock) {
       try {
         this.sock.end(undefined);
@@ -366,18 +268,15 @@ export class WhatsAppClient {
       this.sock = null;
     }
 
-    const targetDir = path.join(this.baseSessionsDir, cleanName);
-    const isNew = !fs.existsSync(targetDir) || !fs.existsSync(path.join(targetDir, 'creds.json'));
+    const isNew = !sessionManager.sessionExists(cleanName);
+    sessionManager.setActiveSessionName(cleanName);
 
-    // Switch active pointer
-    this.currentSessionName = cleanName;
     this.status = 'INITIALIZING';
     this.qrCode = null;
     this.pairingCode = null;
     this.user = null;
     this.isExplicitLogout = false;
 
-    // Re-initialize socket with new session credentials
     await this.initialize();
 
     return {
@@ -388,24 +287,31 @@ export class WhatsAppClient {
   }
 
   /**
-   * Deletes a saved session profile from disk. Active session cannot be deleted directly.
+   * Outbound Messaging Facade
    */
-  deleteSession(sessionName: string): boolean {
-    const cleanName = sessionName.trim().replace(/[^a-zA-Z0-9_-]/g, '');
-    if (!cleanName) return false;
+  async checkNumber(phoneNumber: string) {
+    this.ensureConnected();
+    return await messageSender.checkNumber(this.sock!, phoneNumber);
+  }
 
-    if (cleanName === this.currentSessionName) {
-      throw new Error('Cannot delete the active session. Switch to another session first.');
+  async sendText(target: string, text: string, options: { queued?: boolean } = { queued: true }) {
+    this.ensureConnected();
+    return await messageSender.sendText(this.sock!, target, text, options);
+  }
+
+  async sendMedia(
+    target: string,
+    params: SendMediaParams,
+    options: { queued?: boolean } = { queued: true }
+  ) {
+    this.ensureConnected();
+    return await messageSender.sendMedia(this.sock!, target, params, options);
+  }
+
+  private ensureConnected(): void {
+    if (!this.isConnected() || !this.sock) {
+      throw new Error(`WhatsApp is not connected. Current status: ${this.status}`);
     }
-
-    const targetDir = path.join(this.baseSessionsDir, cleanName);
-    if (fs.existsSync(targetDir)) {
-      fs.rmSync(targetDir, { recursive: true, force: true });
-      logger.info(`[WhatsApp] Deleted session profile: ${cleanName}`);
-      return true;
-    }
-
-    return false;
   }
 
   private async handlePairingFlow(): Promise<void> {
@@ -458,119 +364,6 @@ export class WhatsAppClient {
         this.scheduleReconnect();
       }
     }, delay);
-  }
-
-  /**
-   * Checks if a phone number is registered on WhatsApp
-   */
-  async checkNumber(phoneNumber: string): Promise<{ registered: boolean; jid: string | null }> {
-    if (!this.isConnected() || !this.sock) {
-      throw new Error('WhatsApp is not connected. Current status: ' + this.status);
-    }
-
-    const cleanPhone = formatPhoneNumberForPairing(phoneNumber);
-    if (!cleanPhone) {
-      throw new Error('Invalid phone number format');
-    }
-
-    try {
-      const results = await this.sock.onWhatsApp(cleanPhone);
-      const target = results?.[0];
-
-      if (target?.exists) {
-        return { registered: true, jid: target.jid };
-      }
-
-      return { registered: false, jid: null };
-    } catch (err) {
-      logger.error({ err, phoneNumber }, 'Error checking WhatsApp number');
-      throw err;
-    }
-  }
-
-  /**
-   * Send a text message
-   */
-  async sendText(target: string, text: string, options: { queued?: boolean } = { queued: true }) {
-    if (!this.isConnected() || !this.sock) {
-      throw new Error('WhatsApp is not connected. Current status: ' + this.status);
-    }
-
-    const jid = formatToWhatsAppJid(target);
-
-    const task = async () => {
-      logger.info(`Sending message to ${jid}`);
-      return await this.sock!.sendMessage(jid, { text });
-    };
-
-    if (options.queued) {
-      return await messageQueue.add(task);
-    } else {
-      return await task();
-    }
-  }
-
-  /**
-   * Send media (image, video, document, audio)
-   */
-  async sendMedia(
-    target: string,
-    params: SendMediaParams,
-    options: { queued?: boolean } = { queued: true }
-  ) {
-    if (!this.isConnected() || !this.sock) {
-      throw new Error('WhatsApp is not connected. Current status: ' + this.status);
-    }
-
-    const jid = formatToWhatsAppJid(target);
-
-    let mediaContent: AnyMessageContent;
-
-    const mediaPayload = params.url ? { url: params.url } : params.buffer!;
-
-    switch (params.type) {
-      case 'image':
-        mediaContent = {
-          image: mediaPayload,
-          caption: params.caption,
-          mimetype: params.mimetype || 'image/jpeg',
-        };
-        break;
-      case 'video':
-        mediaContent = {
-          video: mediaPayload,
-          caption: params.caption,
-          mimetype: params.mimetype || 'video/mp4',
-        };
-        break;
-      case 'audio':
-        mediaContent = {
-          audio: mediaPayload,
-          mimetype: params.mimetype || 'audio/mp4',
-        };
-        break;
-      case 'document':
-        mediaContent = {
-          document: mediaPayload,
-          caption: params.caption,
-          mimetype: params.mimetype || 'application/pdf',
-          fileName: params.fileName || 'document.pdf',
-        };
-        break;
-      default:
-        throw new Error(`Unsupported media type: ${params.type}`);
-    }
-
-    const task = async () => {
-      logger.info(`Sending ${params.type} to ${jid}`);
-      return await this.sock!.sendMessage(jid, mediaContent);
-    };
-
-    if (options.queued) {
-      return await messageQueue.add(task);
-    } else {
-      return await task();
-    }
   }
 }
 
