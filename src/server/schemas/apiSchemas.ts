@@ -59,3 +59,15 @@ export const previewSpintaxSchema = z.object({
   count: z.number().int().min(1).max(10).optional().default(3),
   variables: z.record(z.string(), z.string()).optional(),
 });
+
+export const updateSettingsSchema = z.object({
+  botName: z.string().min(1).optional(),
+  prefix: z.string().min(1).max(5).optional(),
+  footerText: z.string().optional(),
+  aiAutoReply: z.boolean().optional(),
+  messageDelayMs: z.number().int().min(500).max(60000).optional(),
+});
+
+export const addOwnerSchema = z.object({
+  phoneNumber: z.string().min(8, 'Nomor telepon minimal 8 digit'),
+});

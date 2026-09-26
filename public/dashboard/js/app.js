@@ -2,6 +2,7 @@ import { initOverview, fetchOverviewStatus } from './modules/overview.js';
 import { initSessions, fetchSessions } from './modules/sessions.js';
 import { initBroadcast, fetchBroadcastStatus } from './modules/broadcast.js';
 import { initAi, fetchKnowledge } from './modules/ai.js';
+import { initSettings, fetchSettings } from './modules/settings.js';
 
 export function switchTab(tabId) {
   document.querySelectorAll('.tab-view').forEach((el) => el.classList.remove('active'));
@@ -16,6 +17,7 @@ export function switchTab(tabId) {
   if (tabId === 'tab-sessions') fetchSessions();
   if (tabId === 'tab-broadcast') fetchBroadcastStatus();
   if (tabId === 'tab-ai') fetchKnowledge();
+  if (tabId === 'tab-settings') fetchSettings();
 }
 
 // Expose switchTab globally for inline onclick triggers
@@ -35,6 +37,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initSessions();
   initBroadcast();
   initAi();
+  initSettings();
 
   // Initial silent polling for system status
   setInterval(fetchOverviewStatus, 4000);

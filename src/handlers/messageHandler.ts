@@ -2,6 +2,7 @@ import type { WAMessage, WASocket } from '@whiskeysockets/baileys';
 import { serializeMessage, type SerializedMessage } from '../core/serializer.js';
 import { commandManager } from '../core/commandManager.js';
 import { config } from '../config/index.js';
+import { settingsManager } from '../config/settingsManager.js';
 import { logger } from '../utils/logger.js';
 
 import { dispatchWebhook } from '../utils/webhook.js';
@@ -106,7 +107,7 @@ export async function handleIncomingMessage(sock: WASocket, rawMsg: WAMessage): 
       return;
     }
 
-    if (config.AI_AUTO_REPLY) {
+    if (settingsManager.getSettings().aiAutoReply) {
       // If chat is currently muted or handled by human agent, skip AI reply
       if (takeoverManager.isMuted(m.senderNumber) || takeoverManager.isMuted(m.from)) {
         return;

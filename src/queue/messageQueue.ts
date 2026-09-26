@@ -43,6 +43,14 @@ class MessageQueueManager {
     };
   }
 
+  setDelay(delayMs: number): void {
+    this.delayMs = delayMs;
+  }
+
+  getDelay(): number {
+    return this.delayMs;
+  }
+
   clear() {
     this.queue.clear();
   }

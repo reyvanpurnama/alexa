@@ -1,18 +1,19 @@
 import type { WASocket, WAMessage } from '@whiskeysockets/baileys';
 import { config } from '../../config/index.js';
+import { settingsManager } from '../../config/settingsManager.js';
 import { logger } from '../../utils/logger.js';
 import { formatToWhatsAppJid } from '../../utils/jid.js';
 import { waClient } from '../../core/whatsapp.js';
 
 export class AlertService {
   /**
-   * Broadcasts an administrative notification to all configured OWNER_NUMBERS
+   * Broadcasts an administrative notification to all configured owner numbers
    * Uses provided sock or falls back to active waClient socket
    */
   async notifyOwners(alertText: string, sock?: WASocket | null): Promise<void> {
-    const owners = config.OWNER_NUMBERS;
+    const owners = settingsManager.getSettings().ownerNumbers;
     if (!owners || owners.length === 0) {
-      logger.debug('[AlertService] No OWNER_NUMBERS configured. Skipping alert dispatch.');
+      logger.debug('[AlertService] No owner numbers configured. Skipping alert dispatch.');
       return;
     }
 
@@ -34,12 +35,12 @@ export class AlertService {
   }
 
   /**
-   * Forwards a customer message (e.g. payment receipt) to all configured OWNER_NUMBERS
+   * Forwards a customer message (e.g. payment receipt) to all configured owner numbers
    */
   async forwardToOwners(rawMsg: WAMessage, headerNote: string, sock?: WASocket | null): Promise<void> {
-    const owners = config.OWNER_NUMBERS;
+    const owners = settingsManager.getSettings().ownerNumbers;
     if (!owners || owners.length === 0) {
-      logger.debug('[AlertService] No OWNER_NUMBERS configured. Skipping forwarder.');
+      logger.debug('[AlertService] No owner numbers configured. Skipping forwarder.');
       return;
     }
 

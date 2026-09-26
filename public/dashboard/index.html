@@ -34,6 +34,7 @@
         <button class="seg-btn" data-tab="tab-sessions" role="tab">Nomor & Sesi</button>
         <button class="seg-btn" data-tab="tab-broadcast" role="tab">Smart Broadcast</button>
         <button class="seg-btn" data-tab="tab-ai" role="tab">Asisten AI</button>
+        <button class="seg-btn" data-tab="tab-settings" role="tab">Pengaturan</button>
       </nav>
     </div>
 
@@ -242,6 +243,97 @@
           <button class="btn btn-primary" id="btn-test-ai" style="width: 100%; margin-bottom: 12px;">Tanyakan</button>
 
           <div id="ai-response-box" style="background: var(--bg-surface-elevated); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 12px; min-height: 120px; font-size: 13px; color: var(--text-secondary); line-height: 1.6; white-space: pre-wrap;">Ketik pertanyaan dan tanyakan langsung ke asisten bot untuk memverifikasi data jawaban.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 5: PENGATURAN & HAK AKSES (SETTINGS) -->
+    <div id="tab-settings" class="tab-view">
+      <div class="bento-grid">
+        <!-- Col-7: Pengelola & Hak Akses (Owners & Roles) -->
+        <div class="bento-card col-7">
+          <div>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+              <div class="card-title" style="margin-bottom: 0;">Pengelola & Hak Akses (Owners & Admins)</div>
+              <span id="owners-count-badge" style="font-size: 11px; color: var(--text-tertiary); font-family: var(--font-mono);">0 Pengelola</span>
+            </div>
+            <p style="font-size: 12px; color: var(--text-secondary); margin-bottom: 16px; line-height: 1.5;">
+              Nomor di daftar ini memiliki hak eksekusi perintah privat (seperti <code>/broadcast</code>, <code>/logout</code>) dan otomatis menerima notifikasi darurat & bukti pembayaran dari pelanggan.
+            </p>
+
+            <div id="owners-list" class="owner-list">
+              <div style="text-align: center; color: var(--text-tertiary); font-size: 12px; padding: 14px;">Memuat daftar pengelola...</div>
+            </div>
+          </div>
+
+          <div style="margin-top: 14px; border-top: 1px solid var(--border-subtle); padding-top: 14px;">
+            <label class="form-label" for="new-owner-input">Tambah Nomor Pengelola Baru</label>
+            <div style="display: flex; gap: 8px;">
+              <input type="text" id="new-owner-input" class="form-input" placeholder="contoh: 628123456789" style="flex: 1;" />
+              <button class="btn btn-primary" id="btn-add-owner" style="white-space: nowrap;">+ Tambah</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Col-5: Saklar Otomasi & AI (Apple Switch) -->
+        <div class="bento-card col-5">
+          <div>
+            <div class="card-title">Otomasi Balasan AI</div>
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; background: var(--bg-surface-elevated); padding: 16px; border-radius: var(--radius-md); border: 1px solid var(--border-subtle); margin-bottom: 16px;">
+              <div style="padding-right: 12px;">
+                <div style="font-size: 13px; font-weight: 600; color: var(--text-primary); margin-bottom: 4px;">Balasan Otomatis AI</div>
+                <div style="font-size: 11px; color: var(--text-secondary); line-height: 1.4;">
+                  Aktifkan agar asisten otomatis membalas pesan masuk pelanggan menggunakan basis data pengetahuan.
+                </div>
+              </div>
+              <label class="switch">
+                <input type="checkbox" id="toggle-ai-autoreply" />
+                <span class="slider"></span>
+              </label>
+            </div>
+
+            <div style="font-size: 12px; color: var(--text-tertiary); line-height: 1.5;">
+              💡 <b>Catatan Apple HIG:</b> Ketika dimatikan, asisten tidak akan menjawab pesan obrolan biasa, namun perintah bot (seperti <code>/ping</code>, <code>/menu</code>) dan kampanye broadcast tetap beroperasi normal.
+            </div>
+          </div>
+        </div>
+
+        <!-- Col-6: Identitas & Tampilan Bot -->
+        <div class="bento-card col-6">
+          <div>
+            <div class="card-title">Identitas & Tampilan Bot</div>
+            <div class="form-group">
+              <label class="form-label" for="setting-bot-name">Nama Bot</label>
+              <input type="text" id="setting-bot-name" class="form-input" placeholder="Alexa" />
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="setting-prefix">Prefix Perintah</label>
+              <input type="text" id="setting-prefix" class="form-input" placeholder="/" style="max-width: 100px; font-family: var(--font-mono);" />
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="setting-footer">Teks Footer Pesan (Opsional)</label>
+              <textarea id="setting-footer" class="form-textarea" rows="2" placeholder="contoh: Dikirim otomatis oleh Asisten Resmi Toko"></textarea>
+            </div>
+          </div>
+          <button class="btn btn-secondary" id="btn-save-identity" style="width: 100%; margin-top: 10px;">Simpan Identitas</button>
+        </div>
+
+        <!-- Col-6: Parameter Kecepatan & Anti-Ban -->
+        <div class="bento-card col-6">
+          <div>
+            <div class="card-title">Kecepatan & Anti-Ban Throttling</div>
+            <div class="form-group">
+              <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+                <label class="form-label" style="margin-bottom: 0;">Jeda Antrean Pesan (Base Delay)</label>
+                <span id="delay-display-val" style="font-family: var(--font-mono); font-size: 12px; color: var(--accent-blue); font-weight: 600;">2.5 detik</span>
+              </div>
+              <input type="range" id="setting-delay-range" min="1000" max="8000" step="500" value="2500" style="width: 100%; accent-color: var(--accent-blue); cursor: pointer;" />
+            </div>
+            <div style="font-size: 12px; color: var(--text-tertiary); line-height: 1.5; margin-bottom: 16px;">
+              Jeda pengiriman beruntun untuk meminimalisir risiko deteksi spam oleh WhatsApp. Sistem secara otomatis menambahkan <i>human jitter</i> (acak 0–1 detik) di atas nilai ini.
+            </div>
+          </div>
+          <button class="btn btn-secondary" id="btn-save-speed" style="width: 100%; margin-top: 10px;">Simpan Parameter Kecepatan</button>
         </div>
       </div>
     </div>

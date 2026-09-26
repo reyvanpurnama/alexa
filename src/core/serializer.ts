@@ -1,6 +1,7 @@
 import type { WAMessage, WASocket, proto, AnyMessageContent } from '@whiskeysockets/baileys';
 import type { WAMessageKey } from '@whiskeysockets/baileys/lib/Types/Message.js';
 import { config } from '../config/index.js';
+import { settingsManager } from '../config/settingsManager.js';
 
 export interface QuotedMessage {
   id: string;
@@ -147,18 +148,18 @@ export async function serializeMessage(sock: WASocket, msg: WAMessage): Promise<
   // Resolve sender details and handle WhatsApp LID mapping
   const { sender, senderNumber, senderLid, isLid } = await resolveSenderDetails(sock, msg, isGroup, from);
 
-  // Owner check based on config.OWNER_NUMBERS (supports matching both PN and LID)
+  // Owner check based on dynamic settingsManager (supports matching both PN and LID)
   const isOwner =
     fromMe ||
-    config.OWNER_NUMBERS.includes(senderNumber) ||
-    (senderLid ? config.OWNER_NUMBERS.includes(senderLid.replace(/\D/g, '')) : false);
+    settingsManager.isOwner(senderNumber) ||
+    (senderLid ? settingsManager.isOwner(senderLid.replace(/\D/g, '')) : false);
 
   // Extract body and type
   const { body, type } = extractBody(msg.message);
 
   // Command & prefix parsing
   const cleanBody = body.trim();
-  const configuredPrefix = config.PREFIX;
+  const configuredPrefix = settingsManager.getSettings().prefix || config.PREFIX;
   const hasPrefix = cleanBody.startsWith(configuredPrefix);
 
   const strippedBody = hasPrefix ? cleanBody.slice(configuredPrefix.length).trim() : cleanBody;
@@ -209,8 +210,9 @@ export async function serializeMessage(sock: WASocket, msg: WAMessage): Promise<
   // Developer action helpers
   const reply = async (replyText: string, options?: { withFooter?: boolean }) => {
     let finalContent = replyText;
-    if (options?.withFooter && config.FOOTER_TEXT) {
-      finalContent = `${replyText}\n\n${config.FOOTER_TEXT}`;
+    const currentFooter = settingsManager.getSettings().footerText;
+    if (options?.withFooter && currentFooter) {
+      finalContent = `${replyText}\n\n${currentFooter}`;
     }
     return await sock.sendMessage(from, { text: finalContent }, { quoted: msg });
   };
