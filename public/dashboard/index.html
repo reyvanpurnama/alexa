@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Alexa — Control Center</title>
+  <meta name="description" content="Minimalist WhatsApp automation engine and autonomous AI assistant.">
+  <link rel="stylesheet" href="/dashboard/css/dashboard.css">
+  <!-- CONFIG_INJECTION -->
+  <script type="module" src="/dashboard/js/app.js"></script>
+</head>
+<body>
+  <div class="container">
+    <!-- Header -->
+    <header>
+      <div class="brand-wrap">
+        <div class="brand-logo">A</div>
+        <span class="brand-title" id="header-bot-name">Alexa</span>
+      </div>
+
+      <div class="header-actions">
+        <div id="status-wrap" class="status-indicator INITIALIZING">
+          <span class="status-dot"></span>
+          <span id="status-label">INITIALIZING</span>
+        </div>
+        <button class="btn btn-ghost btn-sm" id="btn-logout" title="Putus koneksi WhatsApp">Disconnect</button>
+      </div>
+    </header>
+
+    <!-- Segmented Navigation Bar -->
+    <div class="nav-bar">
+      <nav class="segmented-control" role="tablist">
+        <button class="seg-btn active" data-tab="tab-overview" role="tab">Ringkasan</button>
+        <button class="seg-btn" data-tab="tab-sessions" role="tab">Nomor & Sesi</button>
+        <button class="seg-btn" data-tab="tab-broadcast" role="tab">Smart Broadcast</button>
+        <button class="seg-btn" data-tab="tab-ai" role="tab">Asisten AI</button>
+      </nav>
+    </div>
+
+    <!-- TAB 1: RINGKASAN (OVERVIEW) -->
+    <div id="tab-overview" class="tab-view active">
+      <div class="bento-grid">
+        <!-- Active WhatsApp Identity -->
+        <div class="bento-card col-6">
+          <div>
+            <div class="card-title">Koneksi WhatsApp</div>
+            <div class="card-display" id="overview-phone">Memuat...</div>
+            <div class="card-meta" id="overview-name">Memeriksa status...</div>
+          </div>
+          <div style="margin-top: 24px; display: flex; gap: 8px;">
+            <button class="btn btn-secondary btn-sm" onclick="switchTab('tab-sessions')">Ganti Nomor</button>
+            <div id="active-queue-banner" style="display: none; align-items: center; font-size: 12px; color: var(--accent-blue); font-family: var(--font-mono); margin-left: auto;">
+              <span id="queue-count">0</span> pesan dalam antrean
+            </div>
+          </div>
+        </div>
+
+        <!-- AI Engine & Knowledge Context -->
+        <div class="bento-card col-6">
+          <div>
+            <div class="card-title">Model Asisten AI</div>
+            <div class="card-display" id="overview-provider" style="font-size: 22px;">AI ENGINE</div>
+            <div class="card-meta" id="overview-model">Knowledge base siap</div>
+          </div>
+          <div style="margin-top: 24px;">
+            <button class="btn btn-secondary btn-sm" onclick="switchTab('tab-ai')">Buka Pengaturan AI</button>
+          </div>
+        </div>
+
+        <!-- Quick Message Sender -->
+        <div class="bento-card col-12">
+          <div class="card-title">Uji Pengiriman Pesan</div>
+          <div style="display: grid; grid-template-columns: 1fr 2fr auto; gap: 10px; align-items: end;">
+            <div>
+              <label class="form-label" for="test-to">Nomor Tujuan</label>
+              <input type="text" id="test-to" class="form-input" placeholder="628123456789" />
+            </div>
+            <div>
+              <label class="form-label" for="test-msg">Isi Pesan</label>
+              <input type="text" id="test-msg" class="form-input" placeholder="Halo! Pesan uji coba sistem." />
+            </div>
+            <div>
+              <button class="btn btn-secondary" id="btn-quick-send" style="height: 38px;">Kirim Pesan</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 2: NOMOR & SESI (SESSIONS & PAIRING) -->
+    <div id="tab-sessions" class="tab-view">
+      <div class="bento-grid">
+        <div class="bento-card col-7">
+          <div class="card-title">Profil Nomor Tersimpan</div>
+          <table class="apple-table">
+            <thead>
+              <tr>
+                <th>Profil</th>
+                <th>Nomor Telepon</th>
+                <th style="text-align: right;">Aksi</th>
+              </tr>
+            </thead>
+            <tbody id="sessions-table-body">
+              <tr><td colspan="3" style="text-align: center; color: var(--text-tertiary);">Memuat sesi...</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="bento-card col-5">
+          <div class="card-title">Tautkan Nomor Baru</div>
+          <div class="form-group">
+            <label class="form-label" for="pairing-input">Nomor Telepon WhatsApp</label>
+            <input type="text" id="pairing-input" class="form-input" placeholder="628123456789" />
+          </div>
+          <button class="btn btn-primary" id="btn-request-pairing" style="width: 100%;">Minta Kode Pairing</button>
+
+          <div class="pairing-box" id="pairing-box">
+            <div style="font-size: 11px; color: var(--text-tertiary); text-transform: uppercase;">Kode Pairing:</div>
+            <div class="pairing-digits" id="pairing-code-text">---- ----</div>
+            <div style="font-size: 12px; color: var(--text-secondary); line-height: 1.5;">
+              Buka WhatsApp &rarr; <b>Perangkat Tertaut</b> &rarr; <b>Tautkan dengan nomor telepon</b>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 3: SMART BROADCAST -->
+    <div id="tab-broadcast" class="tab-view">
+      <div class="bento-grid">
+        <!-- Left: Input Form -->
+        <div class="bento-card col-7">
+          <div class="card-title">Kampanye Pesan Massal</div>
+
+          <div class="form-group">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+              <label class="form-label" for="bc-targets" style="margin-bottom: 0;">Nomor Penerima</label>
+              <span id="bc-targets-count" style="font-size: 11px; color: var(--text-tertiary); font-family: var(--font-mono);">0 nomor</span>
+            </div>
+            <textarea id="bc-targets" class="form-textarea" rows="4" placeholder="081234567890&#10;089876543210&#10;6285166328091"></textarea>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="bc-message">Template Pesan (Spintax <code>{A|B}</code> & Variabel <code>{{name}}</code>)</label>
+            <textarea id="bc-message" class="form-textarea" rows="4" placeholder="{Halo|Hai|Selamat pagi} {{name}}, ada penawaran istimewa untukmu hari ini! Diskon 30% khusus hari ini."></textarea>
+          </div>
+
+          <div class="pacing-group">
+            <div class="pacing-btn" data-min="8" data-max="15">Santai (8–15s)</div>
+            <div class="pacing-btn active" data-min="4" data-max="8">Seimbang (4–8s)</div>
+            <div class="pacing-btn" data-min="2" data-max="4">Cepat (2–4s)</div>
+          </div>
+
+          <div style="display: flex; gap: 8px;">
+            <button class="btn btn-secondary" id="btn-bc-preview" style="flex: 1;">Pratinjau</button>
+            <button class="btn btn-primary" id="btn-bc-start" style="flex: 1;">Mulai Broadcast</button>
+          </div>
+        </div>
+
+        <!-- Right: Dynamic Context (Progress if Running, else Preview) -->
+        <div class="bento-card col-5">
+          <!-- Active Progress Panel (Revealed ONLY when running/paused) -->
+          <div id="bc-active-monitor" style="display: none;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+              <div class="card-title" style="margin-bottom: 0;">Pengiriman Berjalan</div>
+              <span id="bc-progress-text" style="font-family: var(--font-mono); font-size: 12px; color: var(--accent-blue); font-weight: 600;">0 / 0</span>
+            </div>
+            <div style="width: 100%; height: 5px; background: rgba(255,255,255,0.06); border-radius: var(--radius-pill); overflow: hidden; margin-bottom: 14px;">
+              <div id="bc-bar" style="width: 0%; height: 100%; background: var(--accent-blue); transition: width 0.3s ease;"></div>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; text-align: center; margin-bottom: 14px;">
+              <div style="background: var(--bg-surface-elevated); padding: 8px; border-radius: var(--radius-sm);">
+                <div style="font-size: 10px; color: var(--text-tertiary);">Terkirim</div>
+                <div id="bc-stat-sent" style="font-size: 16px; font-weight: 700; color: var(--accent-green); font-variant-numeric: tabular-nums;">0</div>
+              </div>
+              <div style="background: var(--bg-surface-elevated); padding: 8px; border-radius: var(--radius-sm);">
+                <div style="font-size: 10px; color: var(--text-tertiary);">Gagal</div>
+                <div id="bc-stat-failed" style="font-size: 16px; font-weight: 700; color: var(--accent-red); font-variant-numeric: tabular-nums;">0</div>
+              </div>
+              <div style="background: var(--bg-surface-elevated); padding: 8px; border-radius: var(--radius-sm);">
+                <div style="font-size: 10px; color: var(--text-tertiary);">Sisa</div>
+                <div id="bc-stat-remaining" style="font-size: 16px; font-weight: 700; color: var(--text-secondary); font-variant-numeric: tabular-nums;">0</div>
+              </div>
+            </div>
+            <div style="display: flex; gap: 6px; margin-bottom: 16px;">
+              <button class="btn btn-secondary btn-sm" id="btn-bc-pause" style="flex: 1;">Jeda</button>
+              <button class="btn btn-secondary btn-sm" id="btn-bc-resume" style="flex: 1;" disabled>Lanjut</button>
+              <button class="btn btn-ghost btn-sm" id="btn-bc-cancel" style="flex: 1;">Batal</button>
+            </div>
+          </div>
+
+          <!-- Spintax Preview Section -->
+          <div>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+              <div class="card-title" style="margin-bottom: 0;">Pratinjau Variasi</div>
+              <span id="bc-variations-count" style="font-size: 11px; color: var(--text-tertiary); font-family: var(--font-mono);">0 variasi</span>
+            </div>
+            <div id="bc-preview-container" style="display: flex; flex-direction: column; gap: 6px; font-size: 12px; color: var(--text-secondary); line-height: 1.5;">
+              <p style="color: var(--text-tertiary);">Ketik template dan klik "Pratinjau" untuk melihat contoh kalimat acak yang akan diterima pelanggan.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 4: ASISTEN AI & BASIS PENGETAHUAN -->
+    <div id="tab-ai" class="tab-view">
+      <div class="bento-grid">
+        <div class="bento-card col-6">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+            <div class="card-title" style="margin-bottom: 0;">Basis Pengetahuan (knowledge/)</div>
+            <button class="btn btn-secondary btn-sm" id="btn-refresh-kb">Muat Ulang</button>
+          </div>
+          <div class="form-group">
+            <textarea id="kb-preview-text" class="form-textarea" rows="10" readonly placeholder="Memuat dokumen knowledge base..."></textarea>
+          </div>
+          <div style="font-size: 11px; color: var(--text-tertiary); font-family: var(--font-mono);" id="kb-char-count">-- karakter terindeks</div>
+        </div>
+
+        <div class="bento-card col-6">
+          <div class="card-title">Uji Pertanyaan ke Asisten AI</div>
+          <div class="form-group">
+            <input type="text" id="ai-test-prompt" class="form-input" placeholder="Contoh: Berapa nomor rekening resmi toko?" />
+          </div>
+          <button class="btn btn-primary" id="btn-test-ai" style="width: 100%; margin-bottom: 12px;">Tanyakan</button>
+
+          <div id="ai-response-box" style="background: var(--bg-surface-elevated); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 12px; min-height: 120px; font-size: 13px; color: var(--text-secondary); line-height: 1.6; white-space: pre-wrap;">Ketik pertanyaan dan tanyakan langsung ke asisten bot untuk memverifikasi data jawaban.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast-container"></div>
+</body>
+</html>
