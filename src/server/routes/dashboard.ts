@@ -9,31 +9,30 @@ export const dashboardRoutes: FastifyPluginAsync = async (fastify) => {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>${config.BOT_NAME} — Control Center</title>
-  <meta name="description" content="Production-grade WhatsApp business automation engine and autonomous AI assistant.">
+  <title>${config.BOT_NAME}</title>
+  <meta name="description" content="Minimalist WhatsApp automation engine and autonomous AI assistant.">
   <style>
     :root {
       --bg-canvas: #000000;
-      --bg-surface: #161618;
-      --bg-surface-elevated: #202024;
-      --bg-surface-hover: #26262a;
+      --bg-surface: #141416;
+      --bg-surface-elevated: #1e1e22;
+      --bg-surface-hover: #26262c;
       --border-subtle: rgba(255, 255, 255, 0.08);
       --border-strong: rgba(255, 255, 255, 0.16);
       --text-primary: #f5f5f7;
       --text-secondary: #86868b;
-      --text-tertiary: #6e6e73;
+      --text-tertiary: #545458;
       --accent-blue: #0071e3;
       --accent-blue-hover: #0077ed;
       --accent-green: #30d158;
       --accent-amber: #ff9f0a;
       --accent-red: #ff453a;
-      --accent-purple: #bf5af2;
       --radius-sm: 8px;
       --radius-md: 12px;
-      --radius-lg: 18px;
+      --radius-lg: 16px;
       --radius-pill: 9999px;
       --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Segoe UI", Roboto, sans-serif;
-      --font-mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, monospace;
+      --font-mono: ui-monospace, "SF Mono", Menlo, monospace;
     }
 
     * {
@@ -53,33 +52,31 @@ export const dashboardRoutes: FastifyPluginAsync = async (fastify) => {
     }
 
     .container {
-      max-width: 1140px;
+      max-width: 1080px;
       margin: 0 auto;
     }
 
-    /* Top App Bar */
+    /* Minimalist Apple Top Bar */
     header {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      flex-wrap: wrap;
-      gap: 16px;
-      padding: 14px 20px;
+      padding: 12px 18px;
       background: var(--bg-surface);
       border: 1px solid var(--border-subtle);
       border-radius: var(--radius-lg);
-      margin-bottom: 20px;
+      margin-bottom: 24px;
     }
 
     .brand-wrap {
       display: flex;
       align-items: center;
-      gap: 12px;
+      gap: 10px;
     }
 
     .brand-logo {
-      width: 32px;
-      height: 32px;
+      width: 28px;
+      height: 28px;
       background: var(--text-primary);
       color: var(--bg-canvas);
       border-radius: var(--radius-sm);
@@ -87,40 +84,30 @@ export const dashboardRoutes: FastifyPluginAsync = async (fastify) => {
       align-items: center;
       justify-content: center;
       font-weight: 700;
-      font-size: 16px;
+      font-size: 15px;
     }
 
     .brand-title {
-      font-size: 15px;
+      font-size: 14px;
       font-weight: 600;
       letter-spacing: -0.01em;
       color: var(--text-primary);
     }
 
-    .brand-tag {
-      font-size: 11px;
-      color: var(--text-tertiary);
-      font-family: var(--font-mono);
-      margin-left: 6px;
-    }
-
     .header-actions {
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 12px;
     }
 
-    .status-badge {
+    .status-indicator {
       display: inline-flex;
       align-items: center;
       gap: 8px;
-      padding: 4px 12px;
-      border-radius: var(--radius-pill);
       font-size: 12px;
-      font-weight: 500;
-      border: 1px solid var(--border-subtle);
-      background: rgba(255, 255, 255, 0.04);
+      color: var(--text-secondary);
       font-family: var(--font-mono);
+      font-variant-numeric: tabular-nums;
     }
 
     .status-dot {
@@ -130,41 +117,34 @@ export const dashboardRoutes: FastifyPluginAsync = async (fastify) => {
       background: var(--text-tertiary);
     }
 
-    .status-badge.CONNECTED .status-dot {
+    .status-indicator.CONNECTED .status-dot {
       background: var(--accent-green);
-      box-shadow: 0 0 8px rgba(48, 209, 88, 0.6);
     }
 
-    .status-badge.PAIRING_READY .status-dot,
-    .status-badge.QR_READY .status-dot {
+    .status-indicator.PAIRING_READY .status-dot,
+    .status-indicator.QR_READY .status-dot {
       background: var(--accent-amber);
-      animation: pulse-dot 1.5s infinite;
     }
 
-    .status-badge.DISCONNECTED .status-dot {
+    .status-indicator.DISCONNECTED .status-dot {
       background: var(--accent-red);
     }
 
-    @keyframes pulse-dot {
-      0%, 100% { opacity: 1; transform: scale(1); }
-      50% { opacity: 0.4; transform: scale(0.8); }
-    }
-
-    /* Segmented Navigation Control */
+    /* Segmented Navigation Control (Quiet & Centered) */
     .nav-bar {
       display: flex;
       justify-content: center;
-      margin-bottom: 24px;
+      margin-bottom: 28px;
     }
 
     .segmented-control {
       display: inline-flex;
       align-items: center;
-      gap: 4px;
-      background: #141416;
+      gap: 2px;
+      background: #111113;
       border: 1px solid var(--border-subtle);
       border-radius: var(--radius-pill);
-      padding: 4px;
+      padding: 3px;
     }
 
     .seg-btn {
@@ -174,10 +154,10 @@ export const dashboardRoutes: FastifyPluginAsync = async (fastify) => {
       font-family: var(--font-sans);
       font-size: 13px;
       font-weight: 500;
-      padding: 8px 18px;
+      padding: 7px 18px;
       border-radius: var(--radius-pill);
       cursor: pointer;
-      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      transition: all 0.15s ease;
       user-select: none;
     }
 
@@ -186,13 +166,13 @@ export const dashboardRoutes: FastifyPluginAsync = async (fastify) => {
     }
 
     .seg-btn.active {
-      background: #252529;
+      background: #242428;
       color: var(--text-primary);
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
       font-weight: 600;
     }
 
-    /* Buttons */
+    /* Buttons (Tactile & Restrained) */
     .btn {
       display: inline-flex;
       align-items: center;
@@ -215,7 +195,7 @@ export const dashboardRoutes: FastifyPluginAsync = async (fastify) => {
     }
 
     .btn:disabled {
-      opacity: 0.4;
+      opacity: 0.35;
       cursor: not-allowed;
       transform: none !important;
     }
@@ -240,28 +220,28 @@ export const dashboardRoutes: FastifyPluginAsync = async (fastify) => {
       background: var(--accent-blue-hover);
     }
 
-    .btn-danger {
-      background: rgba(255, 69, 58, 0.12);
-      color: var(--accent-red);
-      border-color: rgba(255, 69, 58, 0.25);
+    .btn-ghost {
+      background: transparent;
+      color: var(--text-secondary);
+      border-color: transparent;
+      padding: 6px 10px;
     }
 
-    .btn-danger:hover:not(:disabled) {
-      background: rgba(255, 69, 58, 0.22);
+    .btn-ghost:hover:not(:disabled) {
+      color: var(--accent-red);
     }
 
     .btn-sm {
-      padding: 6px 11px;
+      padding: 6px 12px;
       font-size: 12px;
       border-radius: var(--radius-sm);
     }
 
-    /* Bento Cards */
+    /* Cards */
     .bento-grid {
       display: grid;
       grid-template-columns: repeat(12, 1fr);
       gap: 16px;
-      margin-bottom: 20px;
     }
 
     .bento-card {
@@ -276,20 +256,14 @@ export const dashboardRoutes: FastifyPluginAsync = async (fastify) => {
 
     .col-4 { grid-column: span 4; }
     .col-6 { grid-column: span 6; }
+    .col-7 { grid-column: span 7; }
     .col-8 { grid-column: span 8; }
     .col-12 { grid-column: span 12; }
 
-    @media (max-width: 900px) {
-      .col-4, .col-6, .col-8 { grid-column: span 12; }
+    @media (max-width: 860px) {
+      .col-4, .col-6, .col-7, .col-8 { grid-column: span 12; }
       .bento-grid { gap: 12px; }
       .seg-btn { padding: 6px 12px; font-size: 12px; }
-    }
-
-    .card-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 14px;
     }
 
     .card-title {
@@ -297,14 +271,15 @@ export const dashboardRoutes: FastifyPluginAsync = async (fastify) => {
       font-weight: 600;
       color: var(--text-secondary);
       letter-spacing: -0.01em;
+      margin-bottom: 12px;
     }
 
-    .card-kpi {
-      font-size: 24px;
+    .card-display {
+      font-size: 26px;
       font-weight: 700;
       letter-spacing: -0.02em;
       color: var(--text-primary);
-      margin-bottom: 4px;
+      margin-bottom: 2px;
       font-variant-numeric: tabular-nums;
     }
 
@@ -350,12 +325,35 @@ export const dashboardRoutes: FastifyPluginAsync = async (fastify) => {
       border-color: var(--accent-blue);
     }
 
-    /* Tables */
-    .table-container {
-      width: 100%;
-      overflow-x: auto;
+    /* Pacing Controls */
+    .pacing-group {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 14px;
     }
 
+    .pacing-btn {
+      flex: 1;
+      padding: 8px 6px;
+      font-size: 12px;
+      font-weight: 500;
+      background: var(--bg-surface-elevated);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-secondary);
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      text-align: center;
+      transition: all 0.15s ease;
+    }
+
+    .pacing-btn.active {
+      background: rgba(0, 113, 227, 0.14);
+      border-color: var(--accent-blue);
+      color: var(--text-primary);
+      font-weight: 600;
+    }
+
+    /* Table */
     .apple-table {
       width: 100%;
       border-collapse: collapse;
@@ -364,15 +362,17 @@ export const dashboardRoutes: FastifyPluginAsync = async (fastify) => {
     }
 
     .apple-table th {
-      padding: 10px 14px;
+      padding: 10px 12px;
       color: var(--text-tertiary);
       font-weight: 500;
-      font-size: 12px;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
       border-bottom: 1px solid var(--border-subtle);
     }
 
     .apple-table td {
-      padding: 14px;
+      padding: 12px;
       border-bottom: 1px solid var(--border-subtle);
       color: var(--text-primary);
     }
@@ -381,13 +381,9 @@ export const dashboardRoutes: FastifyPluginAsync = async (fastify) => {
       border-bottom: none;
     }
 
-    .apple-table tr:hover td {
-      background: rgba(255, 255, 255, 0.02);
-    }
-
     /* Pairing Code Display */
     .pairing-box {
-      margin-top: 16px;
+      margin-top: 14px;
       background: var(--bg-surface-elevated);
       border: 1px solid var(--border-strong);
       border-radius: var(--radius-md);
@@ -402,54 +398,26 @@ export const dashboardRoutes: FastifyPluginAsync = async (fastify) => {
       font-weight: 700;
       letter-spacing: 0.18em;
       color: var(--accent-green);
-      margin: 10px 0;
+      margin: 8px 0;
       font-variant-numeric: tabular-nums;
-    }
-
-    /* Safe Pacing Buttons */
-    .pacing-group {
-      display: flex;
-      gap: 6px;
-      margin-bottom: 14px;
-    }
-
-    .pacing-btn {
-      flex: 1;
-      padding: 8px;
-      font-size: 12px;
-      font-weight: 500;
-      background: var(--bg-surface-elevated);
-      border: 1px solid var(--border-subtle);
-      color: var(--text-secondary);
-      border-radius: var(--radius-sm);
-      cursor: pointer;
-      text-align: center;
-      transition: all 0.15s ease;
-    }
-
-    .pacing-btn.active {
-      background: rgba(0, 113, 227, 0.15);
-      border-color: var(--accent-blue);
-      color: var(--text-primary);
-      font-weight: 600;
     }
 
     /* Tab Views */
     .tab-view {
       display: none;
-      animation: tab-in 0.2s cubic-bezier(0.16, 1, 0.3, 1);
     }
 
     .tab-view.active {
       display: block;
+      animation: tab-fade 0.15s ease;
     }
 
-    @keyframes tab-in {
-      from { opacity: 0; transform: translateY(6px); }
-      to { opacity: 1; transform: translateY(0); }
+    @keyframes tab-fade {
+      from { opacity: 0; }
+      to { opacity: 1; }
     }
 
-    /* Toast */
+    /* Minimalist Toast */
     #toast-container {
       position: fixed;
       bottom: 24px;
@@ -457,23 +425,17 @@ export const dashboardRoutes: FastifyPluginAsync = async (fastify) => {
       z-index: 9999;
       display: flex;
       flex-direction: column;
-      gap: 8px;
+      gap: 6px;
     }
 
     .toast {
-      padding: 12px 18px;
+      padding: 10px 16px;
       background: #1c1c1e;
       border: 1px solid var(--border-strong);
       border-radius: var(--radius-md);
       color: var(--text-primary);
       font-size: 13px;
-      box-shadow: 0 8px 24px rgba(0,0,0,0.6);
-      animation: toast-in 0.2s ease-out;
-    }
-
-    @keyframes toast-in {
-      from { opacity: 0; transform: translateY(8px); }
-      to { opacity: 1; transform: translateY(0); }
+      box-shadow: 0 4px 16px rgba(0,0,0,0.5);
     }
   </style>
 </head>
@@ -483,19 +445,15 @@ export const dashboardRoutes: FastifyPluginAsync = async (fastify) => {
     <header>
       <div class="brand-wrap">
         <div class="brand-logo">A</div>
-        <div>
-          <span class="brand-title">${config.BOT_NAME}</span>
-          <span class="brand-tag">v1.0.0</span>
-        </div>
+        <span class="brand-title">${config.BOT_NAME}</span>
       </div>
 
       <div class="header-actions">
-        <div id="status-pill" class="status-badge ${waClient.getStatus()}">
+        <div id="status-wrap" class="status-indicator ${waClient.getStatus()}">
           <span class="status-dot"></span>
-          <span id="status-text">${waClient.getStatus()}</span>
+          <span id="status-label">${waClient.getStatus()}</span>
         </div>
-        <a href="/docs" class="btn btn-secondary btn-sm" target="_blank">Swagger Docs</a>
-        <button class="btn btn-danger btn-sm" id="btn-logout">Disconnect</button>
+        <button class="btn btn-ghost btn-sm" id="btn-logout" title="Putus koneksi WhatsApp">Disconnect</button>
       </div>
     </header>
 
@@ -512,81 +470,47 @@ export const dashboardRoutes: FastifyPluginAsync = async (fastify) => {
     <!-- TAB 1: RINGKASAN (OVERVIEW) -->
     <div id="tab-overview" class="tab-view active">
       <div class="bento-grid">
-        <div class="bento-card col-4">
-          <div>
-            <div class="card-header">
-              <span class="card-title">Nomor Aktif</span>
-              <span style="font-size: 11px; color: var(--accent-green); font-family: var(--font-mono);">WhatsApp Live</span>
-            </div>
-            <div class="card-kpi" id="overview-phone">${waClient.user ? '+' + waClient.user.id : 'Unpaired'}</div>
-            <div class="card-meta" id="overview-name">${waClient.user?.name || 'Belum ditautkan'}</div>
-          </div>
-          <div style="margin-top: 20px;">
-            <button class="btn btn-secondary btn-sm" style="width: 100%;" onclick="switchTab('tab-sessions')">Kelola Profil Nomor</button>
-          </div>
-        </div>
-
-        <div class="bento-card col-4">
-          <div>
-            <div class="card-header">
-              <span class="card-title">Profil Sesi</span>
-              <span style="font-size: 11px; color: var(--accent-blue); font-family: var(--font-mono);">Hot-Swap Ready</span>
-            </div>
-            <div class="card-kpi" id="overview-session" style="font-family: var(--font-mono); font-size: 20px;">${waClient.getActiveSessionName()}</div>
-            <div class="card-meta">Folder sessions/ aktif</div>
-          </div>
-          <div style="margin-top: 20px;">
-            <button class="btn btn-secondary btn-sm" style="width: 100%;" onclick="switchTab('tab-sessions')">Tautkan Nomor Baru</button>
-          </div>
-        </div>
-
-        <div class="bento-card col-4">
-          <div>
-            <div class="card-header">
-              <span class="card-title">Mesin AI</span>
-              <span style="font-size: 11px; color: var(--accent-purple); font-family: var(--font-mono);">RAG Active</span>
-            </div>
-            <div class="card-kpi" style="font-size: 20px;">${config.AI_PROVIDER.toUpperCase()}</div>
-            <div class="card-meta" id="overview-model">${config.AI_MODEL || 'default-model'}</div>
-          </div>
-          <div style="margin-top: 20px;">
-            <button class="btn btn-secondary btn-sm" style="width: 100%;" onclick="switchTab('tab-ai')">Buka Pengaturan AI</button>
-          </div>
-        </div>
-
-        <!-- Quick Message Tester -->
+        <!-- Active WhatsApp Identity -->
         <div class="bento-card col-6">
-          <div class="card-header">
-            <span class="card-title">Uji Coba Pengiriman Pesan</span>
+          <div>
+            <div class="card-title">Koneksi WhatsApp</div>
+            <div class="card-display" id="overview-phone">${waClient.user ? '+' + waClient.user.id : 'Unpaired'}</div>
+            <div class="card-meta" id="overview-name">${waClient.user?.name || 'Belum ditautkan'} · Sesi: <code id="overview-session">${waClient.getActiveSessionName()}</code></div>
           </div>
-          <div class="form-group">
-            <label class="form-label" for="test-to">Nomor Tujuan</label>
-            <input type="text" id="test-to" class="form-input" placeholder="628123456789" />
+          <div style="margin-top: 24px; display: flex; gap: 8px;">
+            <button class="btn btn-secondary btn-sm" onclick="switchTab('tab-sessions')">Ganti Nomor</button>
+            <div id="active-queue-banner" style="display: none; align-items: center; font-size: 12px; color: var(--accent-blue); font-family: var(--font-mono); margin-left: auto;">
+              <span id="queue-count">0</span> pesan dalam antrean
+            </div>
           </div>
-          <div class="form-group">
-            <label class="form-label" for="test-msg">Isi Pesan</label>
-            <input type="text" id="test-msg" class="form-input" placeholder="Halo! Pesan uji coba sistem Alexa." />
-          </div>
-          <button class="btn btn-secondary" id="btn-quick-send" style="width: 100%;">Kirim Pesan</button>
         </div>
 
-        <!-- System Telemetry -->
+        <!-- AI Engine & Knowledge Context -->
         <div class="bento-card col-6">
-          <div class="card-header">
-            <span class="card-title">Telemetri Sistem</span>
+          <div>
+            <div class="card-title">Model Asisten AI</div>
+            <div class="card-display" style="font-size: 22px;">${config.AI_PROVIDER.toUpperCase()}</div>
+            <div class="card-meta" id="overview-model">${config.AI_MODEL || 'default-model'} · Knowledge base siap</div>
           </div>
-          <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 4px;">
-            <div style="display: flex; justify-content: space-between; border-bottom: 1px solid var(--border-subtle); padding-bottom: 8px;">
-              <span style="font-size: 13px; color: var(--text-secondary);">Antrean Pesan</span>
-              <span id="telemetry-queue" style="font-family: var(--font-mono); font-size: 13px;">0 tertunda</span>
+          <div style="margin-top: 24px;">
+            <button class="btn btn-secondary btn-sm" onclick="switchTab('tab-ai')">Buka Pengaturan AI</button>
+          </div>
+        </div>
+
+        <!-- Quick Message Sender -->
+        <div class="bento-card col-12">
+          <div class="card-title">Uji Pengiriman Pesan</div>
+          <div style="display: grid; grid-template-columns: 1fr 2fr auto; gap: 10px; align-items: end;">
+            <div>
+              <label class="form-label" for="test-to">Nomor Tujuan</label>
+              <input type="text" id="test-to" class="form-input" placeholder="628123456789" />
             </div>
-            <div style="display: flex; justify-content: space-between; border-bottom: 1px solid var(--border-subtle); padding-bottom: 8px;">
-              <span style="font-size: 13px; color: var(--text-secondary);">Protokol Baileys</span>
-              <span style="font-family: var(--font-mono); font-size: 13px;">v7 Multi-Device</span>
+            <div>
+              <label class="form-label" for="test-msg">Isi Pesan</label>
+              <input type="text" id="test-msg" class="form-input" placeholder="Halo! Pesan uji coba sistem." />
             </div>
-            <div style="display: flex; justify-content: space-between;">
-              <span style="font-size: 13px; color: var(--text-secondary);">Proteksi Anti-Ban</span>
-              <span style="font-size: 13px; color: var(--accent-green); font-weight: 500;">Aktif (Jitter & Rest)</span>
+            <div>
+              <button class="btn btn-secondary" id="btn-quick-send" style="height: 38px;">Kirim Pesan</button>
             </div>
           </div>
         </div>
@@ -597,32 +521,25 @@ export const dashboardRoutes: FastifyPluginAsync = async (fastify) => {
     <div id="tab-sessions" class="tab-view">
       <div class="bento-grid">
         <div class="bento-card col-7">
-          <div class="card-header">
-            <span class="card-title">Daftar Sesi Tersimpan (Hot-Swap)</span>
-          </div>
-          <div class="table-container">
-            <table class="apple-table">
-              <thead>
-                <tr>
-                  <th>Nama Profil</th>
-                  <th>Nomor</th>
-                  <th>Status</th>
-                  <th style="text-align: right;">Aksi</th>
-                </tr>
-              </thead>
-              <tbody id="sessions-table-body">
-                <tr><td colspan="4" style="text-align: center; color: var(--text-tertiary);">Memuat sesi...</td></tr>
-              </tbody>
-            </table>
-          </div>
+          <div class="card-title">Profil Nomor Tersimpan</div>
+          <table class="apple-table">
+            <thead>
+              <tr>
+                <th>Profil</th>
+                <th>Nomor Telepon</th>
+                <th style="text-align: right;">Aksi</th>
+              </tr>
+            </thead>
+            <tbody id="sessions-table-body">
+              <tr><td colspan="3" style="text-align: center; color: var(--text-tertiary);">Memuat sesi...</td></tr>
+            </tbody>
+          </table>
         </div>
 
         <div class="bento-card col-5">
-          <div class="card-header">
-            <span class="card-title">Tautkan Nomor Baru</span>
-          </div>
+          <div class="card-title">Tautkan Nomor Baru</div>
           <div class="form-group">
-            <label class="form-label" for="pairing-input">Nomor WhatsApp (Contoh: 628123456789)</label>
+            <label class="form-label" for="pairing-input">Nomor Telepon WhatsApp</label>
             <input type="text" id="pairing-input" class="form-input" placeholder="628123456789" />
           </div>
           <button class="btn btn-primary" id="btn-request-pairing" style="width: 100%;">Minta Kode Pairing</button>
@@ -631,7 +548,7 @@ export const dashboardRoutes: FastifyPluginAsync = async (fastify) => {
             <div style="font-size: 11px; color: var(--text-tertiary); text-transform: uppercase;">Kode Pairing:</div>
             <div class="pairing-digits" id="pairing-code-text">---- ----</div>
             <div style="font-size: 12px; color: var(--text-secondary); line-height: 1.5;">
-              Buka WhatsApp &rarr; <b>Perangkat Tertaut</b> &rarr; <b>Tautkan dengan nomor telepon</b> &rarr; masukkan kode di atas.
+              Buka WhatsApp &rarr; <b>Perangkat Tertaut</b> &rarr; <b>Tautkan dengan nomor telepon</b>
             </div>
           </div>
         </div>
@@ -641,84 +558,75 @@ export const dashboardRoutes: FastifyPluginAsync = async (fastify) => {
     <!-- TAB 3: SMART BROADCAST -->
     <div id="tab-broadcast" class="tab-view">
       <div class="bento-grid">
+        <!-- Left: Input Form -->
         <div class="bento-card col-7">
-          <div class="card-header">
-            <span class="card-title">Kampanye Pesan Massal</span>
-            <div id="bc-badge" class="status-badge" style="display: none;">
-              <span class="status-dot"></span>
-              <span id="bc-badge-text">IDLE</span>
-            </div>
-          </div>
+          <div class="card-title">Kampanye Pesan Massal</div>
 
           <div class="form-group">
             <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
-              <label class="form-label" for="bc-targets" style="margin-bottom: 0;">Daftar Nomor Penerima</label>
+              <label class="form-label" for="bc-targets" style="margin-bottom: 0;">Nomor Penerima</label>
               <span id="bc-targets-count" style="font-size: 11px; color: var(--text-tertiary); font-family: var(--font-mono);">0 nomor</span>
             </div>
             <textarea id="bc-targets" class="form-textarea" rows="4" placeholder="081234567890&#10;089876543210&#10;6285166328091"></textarea>
           </div>
 
           <div class="form-group">
-            <label class="form-label" for="bc-message">Template Pesan (Sintaks Spintax <code>{A|B}</code> & Variabel <code>{{name}}</code>)</label>
-            <textarea id="bc-message" class="form-textarea" rows="4" placeholder="{Halo|Hai|Selamat pagi} {kak|bunda|mas}, ada promo istimewa khusus untukmu hari ini! Diskon hingga 50% untuk pesanan pertamamu."></textarea>
+            <label class="form-label" for="bc-message">Template Pesan (Spintax <code>{A|B}</code> & Variabel <code>{{name}}</code>)</label>
+            <textarea id="bc-message" class="form-textarea" rows="4" placeholder="{Halo|Hai|Selamat pagi} {{name}}, ada penawaran istimewa untukmu hari ini! Diskon 30% khusus hari ini."></textarea>
           </div>
 
-          <label class="form-label">Ritme Pengiriman Anti-Ban</label>
           <div class="pacing-group">
-            <div class="pacing-btn" data-min="8" data-max="15">🐢 Santai (8–15 dtk)</div>
-            <div class="pacing-btn active" data-min="4" data-max="8">🐇 Seimbang (4–8 dtk)</div>
-            <div class="pacing-btn" data-min="2" data-max="4">⚡ Agresif (2–4 dtk)</div>
+            <div class="pacing-btn" data-min="8" data-max="15">Santai (8–15s)</div>
+            <div class="pacing-btn active" data-min="4" data-max="8">Seimbang (4–8s)</div>
+            <div class="pacing-btn" data-min="2" data-max="4">Cepat (2–4s)</div>
           </div>
 
           <div style="display: flex; gap: 8px;">
-            <button class="btn btn-secondary" id="btn-bc-preview" style="flex: 1;">Pratinjau Variasi</button>
+            <button class="btn btn-secondary" id="btn-bc-preview" style="flex: 1;">Pratinjau</button>
             <button class="btn btn-primary" id="btn-bc-start" style="flex: 1;">Mulai Broadcast</button>
           </div>
         </div>
 
+        <!-- Right: Dynamic Context (Progress if Running, else Preview) -->
         <div class="bento-card col-5">
-          <div class="card-header">
-            <span class="card-title">Pemantauan & Pratinjau</span>
-          </div>
-
-          <!-- Progress Widget -->
-          <div style="background: var(--bg-surface-elevated); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 14px; margin-bottom: 14px;">
-            <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 12px;">
-              <span style="color: var(--text-secondary);">Progres Pengiriman</span>
-              <span id="bc-stat-progress" style="font-family: var(--font-mono); color: var(--accent-blue); font-weight: 600;">0 / 0 (0%)</span>
+          <!-- Active Progress Panel (Revealed ONLY when running/paused) -->
+          <div id="bc-active-monitor" style="display: none;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+              <div class="card-title" style="margin-bottom: 0;">Pengiriman Berjalan</div>
+              <span id="bc-progress-text" style="font-family: var(--font-mono); font-size: 12px; color: var(--accent-blue); font-weight: 600;">0 / 0</span>
             </div>
-            <div style="width: 100%; height: 6px; background: rgba(255,255,255,0.06); border-radius: var(--radius-pill); overflow: hidden; margin-bottom: 12px;">
+            <div style="width: 100%; height: 5px; background: rgba(255,255,255,0.06); border-radius: var(--radius-pill); overflow: hidden; margin-bottom: 14px;">
               <div id="bc-bar" style="width: 0%; height: 100%; background: var(--accent-blue); transition: width 0.3s ease;"></div>
             </div>
-            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; text-align: center; margin-bottom: 12px;">
-              <div style="background: rgba(255,255,255,0.02); padding: 6px; border-radius: var(--radius-sm);">
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; text-align: center; margin-bottom: 14px;">
+              <div style="background: var(--bg-surface-elevated); padding: 8px; border-radius: var(--radius-sm);">
                 <div style="font-size: 10px; color: var(--text-tertiary);">Terkirim</div>
                 <div id="bc-stat-sent" style="font-size: 16px; font-weight: 700; color: var(--accent-green); font-variant-numeric: tabular-nums;">0</div>
               </div>
-              <div style="background: rgba(255,255,255,0.02); padding: 6px; border-radius: var(--radius-sm);">
+              <div style="background: var(--bg-surface-elevated); padding: 8px; border-radius: var(--radius-sm);">
                 <div style="font-size: 10px; color: var(--text-tertiary);">Gagal</div>
                 <div id="bc-stat-failed" style="font-size: 16px; font-weight: 700; color: var(--accent-red); font-variant-numeric: tabular-nums;">0</div>
               </div>
-              <div style="background: rgba(255,255,255,0.02); padding: 6px; border-radius: var(--radius-sm);">
+              <div style="background: var(--bg-surface-elevated); padding: 8px; border-radius: var(--radius-sm);">
                 <div style="font-size: 10px; color: var(--text-tertiary);">Sisa</div>
                 <div id="bc-stat-remaining" style="font-size: 16px; font-weight: 700; color: var(--text-secondary); font-variant-numeric: tabular-nums;">0</div>
               </div>
             </div>
-            <div style="display: flex; gap: 6px;">
-              <button class="btn btn-secondary btn-sm" id="btn-bc-pause" style="flex: 1;" disabled>Jeda</button>
+            <div style="display: flex; gap: 6px; margin-bottom: 16px;">
+              <button class="btn btn-secondary btn-sm" id="btn-bc-pause" style="flex: 1;">Jeda</button>
               <button class="btn btn-secondary btn-sm" id="btn-bc-resume" style="flex: 1;" disabled>Lanjut</button>
-              <button class="btn btn-danger btn-sm" id="btn-bc-cancel" style="flex: 1;" disabled>Batal</button>
+              <button class="btn btn-ghost btn-sm" id="btn-bc-cancel" style="flex: 1;">Batal</button>
             </div>
           </div>
 
-          <!-- Spintax Preview Box -->
-          <div style="background: var(--bg-surface-elevated); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 14px; flex: 1;">
-            <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
-              <span style="font-size: 12px; font-weight: 600; color: var(--text-secondary);">Sampel Variasi</span>
-              <span id="bc-variations-count" style="font-size: 11px; color: var(--accent-purple); font-family: var(--font-mono);">0 variasi</span>
+          <!-- Spintax Preview Section -->
+          <div>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+              <div class="card-title" style="margin-bottom: 0;">Pratinjau Variasi</div>
+              <span id="bc-variations-count" style="font-size: 11px; color: var(--text-tertiary); font-family: var(--font-mono);">0 variasi</span>
             </div>
-            <div id="bc-preview-container" style="display: flex; flex-direction: column; gap: 6px; font-size: 12px; color: var(--text-secondary);">
-              <p style="color: var(--text-tertiary); font-style: italic;">Klik "Pratinjau Variasi" untuk menguji template Spintax.</p>
+            <div id="bc-preview-container" style="display: flex; flex-direction: column; gap: 6px; font-size: 12px; color: var(--text-secondary); line-height: 1.5;">
+              <p style="color: var(--text-tertiary);">Ketik template dan klik "Pratinjau" untuk melihat contoh kalimat acak yang akan diterima pelanggan.</p>
             </div>
           </div>
         </div>
@@ -729,40 +637,24 @@ export const dashboardRoutes: FastifyPluginAsync = async (fastify) => {
     <div id="tab-ai" class="tab-view">
       <div class="bento-grid">
         <div class="bento-card col-6">
-          <div class="card-header">
-            <span class="card-title">Basis Pengetahuan Bisnis (Knowledge Base)</span>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+            <div class="card-title" style="margin-bottom: 0;">Basis Pengetahuan (knowledge/)</div>
             <button class="btn btn-secondary btn-sm" id="btn-refresh-kb">Muat Ulang</button>
           </div>
-          <div style="display: flex; gap: 12px; margin-bottom: 14px;">
-            <div style="background: var(--bg-surface-elevated); padding: 10px 14px; border-radius: var(--radius-md); flex: 1;">
-              <div style="font-size: 11px; color: var(--text-tertiary);">Kapasitas Konteks</div>
-              <div id="kb-char-count" style="font-size: 18px; font-weight: 700; color: var(--text-primary); font-variant-numeric: tabular-nums;">-- chars</div>
-            </div>
-            <div style="background: var(--bg-surface-elevated); padding: 10px 14px; border-radius: var(--radius-md); flex: 1;">
-              <div style="font-size: 11px; color: var(--text-tertiary);">Status Grounding</div>
-              <div style="font-size: 18px; font-weight: 700; color: var(--accent-green);">Aktif</div>
-            </div>
-          </div>
           <div class="form-group">
-            <label class="form-label">Pratinjau Dokumen Terindeks (knowledge/business.md & faq.json)</label>
-            <textarea id="kb-preview-text" class="form-textarea" rows="8" readonly placeholder="Memuat dokumen knowledge base..."></textarea>
+            <textarea id="kb-preview-text" class="form-textarea" rows="10" readonly placeholder="Memuat dokumen knowledge base..."></textarea>
           </div>
+          <div style="font-size: 11px; color: var(--text-tertiary); font-family: var(--font-mono);" id="kb-char-count">-- karakter terindeks</div>
         </div>
 
         <div class="bento-card col-6">
-          <div class="card-header">
-            <span class="card-title">Pengujian Jawaban AI Langsung</span>
-          </div>
+          <div class="card-title">Uji Pertanyaan ke Asisten AI</div>
           <div class="form-group">
-            <label class="form-label" for="ai-test-prompt">Pertanyaan Percobaan</label>
             <input type="text" id="ai-test-prompt" class="form-input" placeholder="Contoh: Berapa nomor rekening resmi toko?" />
           </div>
-          <button class="btn btn-primary" id="btn-test-ai" style="width: 100%; margin-bottom: 14px;">Uji Respon AI</button>
+          <button class="btn btn-primary" id="btn-test-ai" style="width: 100%; margin-bottom: 12px;">Tanyakan</button>
 
-          <div class="form-group">
-            <label class="form-label">Jawaban Model AI (Tergrounding Data Bisnis)</label>
-            <div id="ai-response-box" style="background: var(--bg-surface-elevated); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 14px; min-height: 120px; font-size: 13px; color: var(--text-secondary); line-height: 1.6; white-space: pre-wrap;">Ketik pertanyaan di atas dan klik "Uji Respon AI" untuk melihat bagaimana bot menjawab pertanyaan pelanggan secara cerdas dan akurat.</div>
-          </div>
+          <div id="ai-response-box" style="background: var(--bg-surface-elevated); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 12px; min-height: 120px; font-size: 13px; color: var(--text-secondary); line-height: 1.6; white-space: pre-wrap;">Ketik pertanyaan dan tanyakan langsung ke asisten bot untuk memverifikasi data jawaban.</div>
         </div>
       </div>
     </div>
@@ -773,15 +665,15 @@ export const dashboardRoutes: FastifyPluginAsync = async (fastify) => {
   <script>
     const API_KEY = "${config.API_KEY}";
 
-    // Toast notification
+    // Quiet Toast: Only for meaningful notifications
     function showToast(message, isError = false) {
       const container = document.getElementById('toast-container');
       const toast = document.createElement('div');
       toast.className = 'toast';
       toast.style.borderColor = isError ? 'var(--accent-red)' : 'var(--border-strong)';
-      toast.textContent = (isError ? '⚠️ ' : '✓ ') + message;
+      toast.textContent = message;
       container.appendChild(toast);
-      setTimeout(() => toast.remove(), 3500);
+      setTimeout(() => toast.remove(), 3000);
     }
 
     // Segmented Navigation Switching
@@ -801,9 +693,7 @@ export const dashboardRoutes: FastifyPluginAsync = async (fastify) => {
     }
 
     document.querySelectorAll('.seg-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
-        switchTab(btn.getAttribute('data-tab'));
-      });
+      btn.addEventListener('click', () => switchTab(btn.getAttribute('data-tab')));
     });
 
     // Pacing selector in broadcast
@@ -832,18 +722,23 @@ export const dashboardRoutes: FastifyPluginAsync = async (fastify) => {
         const data = await res.json();
         if (!data.success) return;
 
-        const pill = document.getElementById('status-pill');
-        const statusText = document.getElementById('status-text');
-        pill.className = 'status-badge ' + data.status;
-        statusText.textContent = data.status;
+        const wrap = document.getElementById('status-wrap');
+        const label = document.getElementById('status-label');
+        wrap.className = 'status-indicator ' + data.status;
+        label.textContent = data.status === 'CONNECTED' ? (data.user?.id ? '+' + data.user.id : 'Live') : data.status;
 
-        const phone = data.user?.id ? '+' + data.user.id : 'Unpaired';
+        const phone = data.user?.id ? '+' + data.user.id : 'Belum Ditautkan';
         const name = data.user?.name || (data.connected ? 'WhatsApp Connected' : 'Belum ditautkan');
         document.getElementById('overview-phone').textContent = phone;
         document.getElementById('overview-name').textContent = name;
 
-        if (data.queue) {
-          document.getElementById('telemetry-queue').textContent = data.queue.size + ' tertunda';
+        // "No news is good news": Only show queue counter if there are actually pending items
+        const queueBanner = document.getElementById('active-queue-banner');
+        if (data.queue && data.queue.size > 0) {
+          queueBanner.style.display = 'inline-flex';
+          document.getElementById('queue-count').textContent = data.queue.size;
+        } else {
+          queueBanner.style.display = 'none';
         }
       } catch (err) {}
     }
@@ -862,25 +757,22 @@ export const dashboardRoutes: FastifyPluginAsync = async (fastify) => {
         tbody.innerHTML = '';
 
         if (!data.sessions || data.sessions.length === 0) {
-          tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: var(--text-tertiary);">Tidak ada profil sesi</td></tr>';
+          tbody.innerHTML = '<tr><td colspan="3" style="text-align: center; color: var(--text-tertiary);">Tidak ada profil sesi</td></tr>';
           return;
         }
 
         data.sessions.forEach(s => {
           const tr = document.createElement('tr');
           const isAct = s.isActive;
-          const statusHtml = isAct
-            ? '<span style="color: var(--accent-green); font-weight: 600; font-size: 11px;">● AKTIF</span>'
-            : (s.isRegistered ? '<span style="color: var(--text-tertiary); font-size: 11px;">Tersimpan</span>' : '<span style="color: var(--accent-amber); font-size: 11px;">Belum Tertaut</span>');
+          const phoneLabel = s.phoneNumber ? '+' + s.phoneNumber : '<span style="color: var(--text-tertiary); font-size: 11px;">Belum tertaut</span>';
 
           const actionHtml = isAct
-            ? '<span style="font-size: 12px; color: var(--text-tertiary);">Sedang Aktif</span>'
+            ? '<span style="font-size: 12px; color: var(--accent-green); font-weight: 500;">Aktif</span>'
             : '<button class="btn btn-secondary btn-sm" onclick="switchSession(\\'' + s.name + '\\')">Aktifkan</button>';
 
           tr.innerHTML = \`
             <td style="font-family: var(--font-mono); font-weight: 500;">\${s.name}</td>
-            <td style="font-family: var(--font-mono); font-size: 12px;">\${s.phoneNumber ? '+' + s.phoneNumber : '-'}</td>
-            <td>\${statusHtml}</td>
+            <td style="font-family: var(--font-mono); font-size: 12px;">\${phoneLabel}</td>
             <td style="text-align: right;">\${actionHtml}</td>
           \`;
           tbody.appendChild(tr);
@@ -888,7 +780,6 @@ export const dashboardRoutes: FastifyPluginAsync = async (fastify) => {
       } catch (err) {}
     }
 
-    // Switch Session
     async function switchSession(sessionName) {
       try {
         const res = await fetch('/api/sessions/switch', {
@@ -898,7 +789,6 @@ export const dashboardRoutes: FastifyPluginAsync = async (fastify) => {
         });
         const data = await res.json();
         if (data.success) {
-          showToast('Beralih ke sesi: ' + sessionName);
           fetchStatus();
           fetchSessions();
         } else {
@@ -911,7 +801,7 @@ export const dashboardRoutes: FastifyPluginAsync = async (fastify) => {
 
     // 3. Logout / Disconnect
     document.getElementById('btn-logout').addEventListener('click', async () => {
-      if (!confirm('Putuskan koneksi sesi aktif saat ini?')) return;
+      if (!confirm('Putuskan koneksi WhatsApp aktif?')) return;
       try {
         const res = await fetch('/api/session/logout', {
           method: 'POST',
@@ -919,7 +809,6 @@ export const dashboardRoutes: FastifyPluginAsync = async (fastify) => {
         });
         const data = await res.json();
         if (data.success) {
-          showToast('Sesi berhasil diputuskan');
           fetchStatus();
           fetchSessions();
         }
@@ -950,7 +839,6 @@ export const dashboardRoutes: FastifyPluginAsync = async (fastify) => {
         if (data.success && data.code) {
           document.getElementById('pairing-code-text').textContent = data.code;
           document.getElementById('pairing-box').style.display = 'block';
-          showToast('Kode pairing berhasil dibuat!');
         } else {
           showToast(data.error || 'Gagal membuat kode pairing', true);
         }
@@ -967,7 +855,7 @@ export const dashboardRoutes: FastifyPluginAsync = async (fastify) => {
       const to = document.getElementById('test-to').value.trim();
       const message = document.getElementById('test-msg').value.trim();
       if (!to || !message) {
-        showToast('Nomor tujuan dan isi pesan wajib diisi', true);
+        showToast('Nomor dan pesan wajib diisi', true);
         return;
       }
 
@@ -979,8 +867,8 @@ export const dashboardRoutes: FastifyPluginAsync = async (fastify) => {
         });
         const data = await res.json();
         if (data.success) {
-          showToast('Pesan berhasil masuk ke antrean pengiriman!');
           document.getElementById('test-msg').value = '';
+          showToast('Pesan dikirim ke antrean');
         } else {
           showToast(data.error || 'Gagal mengirim pesan', true);
         }
@@ -989,7 +877,7 @@ export const dashboardRoutes: FastifyPluginAsync = async (fastify) => {
       }
     });
 
-    // 6. Broadcast Management
+    // 6. Broadcast Management (Quiet by Default)
     let bcTimer = null;
 
     async function fetchBroadcastStatus() {
@@ -1001,26 +889,22 @@ export const dashboardRoutes: FastifyPluginAsync = async (fastify) => {
         if (!data.success) return;
 
         const job = data.currentJob;
-        const badge = document.getElementById('bc-badge');
-        const badgeText = document.getElementById('bc-badge-text');
+        const monitorEl = document.getElementById('bc-active-monitor');
         const btnPause = document.getElementById('btn-bc-pause');
         const btnResume = document.getElementById('btn-bc-resume');
-        const btnCancel = document.getElementById('btn-bc-cancel');
 
-        if (!job) {
-          badge.style.display = 'none';
-          btnPause.disabled = true;
-          btnResume.disabled = true;
-          btnCancel.disabled = true;
+        // Quiet UI: If idle / no active job, hide the active progress panel
+        if (!job || job.status === 'completed' || job.status === 'cancelled') {
+          monitorEl.style.display = 'none';
+          if (bcTimer) { clearInterval(bcTimer); bcTimer = null; }
           return;
         }
 
-        badge.style.display = 'inline-flex';
-        badge.className = 'status-badge ' + (job.status === 'running' ? 'CONNECTED' : job.status === 'paused' ? 'PAIRING_READY' : 'DISCONNECTED');
-        badgeText.textContent = job.status.toUpperCase();
+        // Only reveal monitor when a job is active
+        monitorEl.style.display = 'block';
 
         const pct = job.progressPercent || 0;
-        document.getElementById('bc-stat-progress').textContent = (job.sentCount + job.failedCount) + ' / ' + job.totalTargets + ' (' + pct + '%)';
+        document.getElementById('bc-progress-text').textContent = (job.sentCount + job.failedCount) + ' / ' + job.totalTargets + ' (' + pct + '%)';
         document.getElementById('bc-bar').style.width = pct + '%';
         document.getElementById('bc-stat-sent').textContent = job.sentCount;
         document.getElementById('bc-stat-failed').textContent = job.failedCount;
@@ -1028,12 +912,9 @@ export const dashboardRoutes: FastifyPluginAsync = async (fastify) => {
 
         btnPause.disabled = job.status !== 'running';
         btnResume.disabled = job.status !== 'paused';
-        btnCancel.disabled = job.status !== 'running' && job.status !== 'paused';
 
         if (job.status === 'running' || job.status === 'paused') {
           if (!bcTimer) bcTimer = setInterval(fetchBroadcastStatus, 2500);
-        } else {
-          if (bcTimer) { clearInterval(bcTimer); bcTimer = null; }
         }
       } catch (err) {}
     }
@@ -1057,14 +938,11 @@ export const dashboardRoutes: FastifyPluginAsync = async (fastify) => {
           document.getElementById('bc-variations-count').textContent = data.totalVariations + ' variasi';
           const container = document.getElementById('bc-preview-container');
           container.innerHTML = data.previews.map((p, idx) => 
-            '<div style="background: rgba(255,255,255,0.03); border-left: 2px solid var(--accent-blue); padding: 8px 10px; border-radius: 4px;">' +
+            '<div style="background: var(--bg-surface-elevated); padding: 8px 10px; border-radius: var(--radius-sm); border: 1px solid var(--border-subtle);">' +
               '<div style="font-size: 10px; color: var(--text-tertiary); margin-bottom: 2px;">Sampel #' + (idx + 1) + ':</div>' +
               '<div>' + p + '</div>' +
             '</div>'
           ).join('');
-          showToast('Pratinjau variasi dibuat!');
-        } else {
-          showToast(data.error || 'Gagal membuat pratinjau', true);
         }
       } catch (e) {
         showToast('Gagal memuat pratinjau variasi', true);
@@ -1077,7 +955,7 @@ export const dashboardRoutes: FastifyPluginAsync = async (fastify) => {
       const message = document.getElementById('bc-message').value.trim();
 
       if (!raw || !message) {
-        showToast('Nomor tujuan dan template pesan wajib diisi', true);
+        showToast('Nomor tujuan dan template wajib diisi', true);
         return;
       }
 
@@ -1104,7 +982,7 @@ export const dashboardRoutes: FastifyPluginAsync = async (fastify) => {
         });
         const data = await res.json();
         if (data.success) {
-          showToast('Broadcast dimulai untuk ' + data.totalTargets + ' nomor!');
+          showToast('Broadcast dimulai untuk ' + data.totalTargets + ' nomor');
           fetchBroadcastStatus();
         } else {
           showToast(data.error || 'Gagal memulai broadcast', true);
@@ -1126,7 +1004,7 @@ export const dashboardRoutes: FastifyPluginAsync = async (fastify) => {
       fetchBroadcastStatus();
     });
     document.getElementById('btn-bc-cancel').addEventListener('click', async () => {
-      if (!confirm('Batalkan pengiriman kampanye broadcast ini?')) return;
+      if (!confirm('Batalkan broadcast ini?')) return;
       await fetch('/api/broadcast/cancel', { method: 'POST', headers: { 'x-api-key': API_KEY } });
       fetchBroadcastStatus();
     });
@@ -1139,7 +1017,7 @@ export const dashboardRoutes: FastifyPluginAsync = async (fastify) => {
         });
         const data = await res.json();
         if (data.success) {
-          document.getElementById('kb-char-count').textContent = (data.stats?.length || 0) + ' karakter';
+          document.getElementById('kb-char-count').textContent = (data.stats?.length || 0) + ' karakter terindeks';
           document.getElementById('kb-preview-text').value = data.context || '(Belum ada dokumen terindeks)';
         }
       } catch (e) {}
@@ -1153,7 +1031,7 @@ export const dashboardRoutes: FastifyPluginAsync = async (fastify) => {
         });
         const data = await res.json();
         if (data.success) {
-          showToast('Knowledge base berhasil dimuat ulang!');
+          showToast('Knowledge base dimuat ulang');
           fetchKnowledge();
         }
       } catch (e) {
@@ -1163,16 +1041,13 @@ export const dashboardRoutes: FastifyPluginAsync = async (fastify) => {
 
     document.getElementById('btn-test-ai').addEventListener('click', async () => {
       const prompt = document.getElementById('ai-test-prompt').value.trim();
-      if (!prompt) {
-        showToast('Masukkan pertanyaan percobaan terlebih dahulu', true);
-        return;
-      }
+      if (!prompt) return;
 
       const box = document.getElementById('ai-response-box');
       const btn = document.getElementById('btn-test-ai');
       btn.disabled = true;
-      btn.textContent = 'Menghasilkan jawaban...';
-      box.textContent = 'Menghubungkan ke ' + "${config.AI_PROVIDER.toUpperCase()}" + '...';
+      btn.textContent = 'Menghubungkan...';
+      box.textContent = 'Menunggu jawaban...';
 
       try {
         const res = await fetch('/api/ai/query', {
@@ -1184,17 +1059,17 @@ export const dashboardRoutes: FastifyPluginAsync = async (fastify) => {
         if (data.success) {
           box.textContent = data.response;
         } else {
-          box.textContent = 'Terjadi kesalahan: ' + (data.error || 'Gagal menghasilkan jawaban.');
+          box.textContent = 'Gagal: ' + (data.error || 'Terjadi kesalahan');
         }
       } catch (e) {
-        box.textContent = 'Kesalahan jaringan saat menghubungi AI.';
+        box.textContent = 'Kesalahan jaringan.';
       } finally {
         btn.disabled = false;
-        btn.textContent = 'Uji Respon AI';
+        btn.textContent = 'Tanyakan';
       }
     });
 
-    // Initial polling
+    // Initial silent polling
     fetchStatus();
     setInterval(fetchStatus, 4000);
   </script>
