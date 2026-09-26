@@ -8,15 +8,7 @@ import { waClient } from '../../core/whatsapp.js';
 export const dashboardRoutes: FastifyPluginAsync = async (fastify) => {
   const publicDir = path.resolve(process.cwd(), 'public/dashboard');
 
-  // Serve static assets (CSS, JS modules) under /dashboard/
-  await fastify.register(fastifyStatic, {
-    root: publicDir,
-    prefix: '/dashboard/',
-    decorateReply: false,
-  });
-
-  // Serve main Dashboard page with runtime config injection
-  fastify.get('/dashboard', async (_request, reply) => {
+  const renderDashboard = async (reply: any) => {
     const indexPath = path.join(publicDir, 'index.html');
     let html = await fs.promises.readFile(indexPath, 'utf-8');
 
@@ -44,5 +36,18 @@ export const dashboardRoutes: FastifyPluginAsync = async (fastify) => {
     );
 
     return reply.type('text/html').send(html);
+  };
+
+  // Serve static assets (CSS, JS modules) under /dashboard/ without raw index.html hijacking
+  await fastify.register(fastifyStatic, {
+    root: publicDir,
+    prefix: '/dashboard/',
+    decorateReply: false,
+    index: false,
   });
+
+  // Serve main Dashboard page with runtime config injection
+  fastify.get('/dashboard', async (_request, reply) => renderDashboard(reply));
+  fastify.get('/dashboard/', async (_request, reply) => reply.redirect('/dashboard'));
+  fastify.get('/dashboard/index.html', async (_request, reply) => renderDashboard(reply));
 };
