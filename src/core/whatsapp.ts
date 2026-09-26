@@ -140,6 +140,7 @@ export class WhatsAppClient {
           // Clean up session if logged out
           try {
             fs.rmSync(this.sessionsDir, { recursive: true, force: true });
+            fs.mkdirSync(this.sessionsDir, { recursive: true });
           } catch (e) {
             logger.error({ err: e }, 'Failed to clear session dir');
           }
@@ -183,15 +184,32 @@ export class WhatsAppClient {
   }
 
   /**
-   * Generates WhatsApp 8-digit pairing code for phone-number based linking
+   * Generates WhatsApp 8-digit pairing code for phone-number based linking.
+   * If a sessionName is provided, hot-swaps to that session profile first.
+   * If the current session is already linked to a different phone number,
+   * performs a clean logout/reset so the new phone number can pair smoothly.
    */
-  async requestPairing(phoneNumber: string): Promise<string> {
-    if (!this.sock) {
-      throw new Error('WhatsApp client is not initialized');
-    }
+  async requestPairing(phoneNumber: string, sessionName?: string): Promise<string> {
     const cleanPhone = formatPhoneNumberForPairing(phoneNumber);
     if (!cleanPhone) {
       throw new Error('Invalid phone number for pairing');
+    }
+
+    if (sessionName && sessionName.trim() && sessionName.trim() !== this.currentSessionName) {
+      await this.switchSession(sessionName.trim());
+    } else if (this.sock && (this.isConnected() || this.user) && this.user?.id !== cleanPhone) {
+      logger.info(
+        `[WhatsApp] Current session is linked to +${this.user?.id}. Resetting session for new number +${cleanPhone}...`
+      );
+      await this.logout();
+    }
+
+    if (!this.sock) {
+      await this.initialize();
+    }
+
+    if (!this.sock) {
+      throw new Error('Failed to initialize WhatsApp socket for pairing');
     }
 
     this.status = 'PAIRING_READY';
@@ -235,6 +253,7 @@ export class WhatsAppClient {
     try {
       if (fs.existsSync(this.sessionsDir)) {
         fs.rmSync(this.sessionsDir, { recursive: true, force: true });
+        fs.mkdirSync(this.sessionsDir, { recursive: true });
         logger.info(`[WhatsApp] Deleted session files in ${this.sessionsDir}`);
       }
     } catch (err) {

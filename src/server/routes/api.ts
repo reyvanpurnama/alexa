@@ -26,6 +26,7 @@ const sendMediaSchema = z.object({
 
 const pairingSchema = z.object({
   phoneNumber: z.string().min(8, 'Phone number must be at least 8 digits'),
+  sessionName: z.string().optional(),
 });
 
 const checkNumberSchema = z.object({
@@ -106,11 +107,12 @@ export const apiRoutes: FastifyPluginAsync = async (fastify) => {
     }
 
     try {
-      const code = await waClient.requestPairing(parse.data.phoneNumber);
+      const code = await waClient.requestPairing(parse.data.phoneNumber, parse.data.sessionName);
       return reply.send({
         success: true,
         message: 'Pairing code generated successfully. Enter this code in WhatsApp -> Linked Devices.',
         phoneNumber: parse.data.phoneNumber,
+        sessionName: waClient.getActiveSessionName(),
         code,
       });
     } catch (err: unknown) {

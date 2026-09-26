@@ -6,6 +6,8 @@ export function initSessions() {
   if (btnPairing) {
     btnPairing.addEventListener('click', async () => {
       const phoneNumber = document.getElementById('pairing-input')?.value.trim();
+      const sessionName = document.getElementById('pairing-session-name')?.value.trim();
+
       if (!phoneNumber) {
         showToast('Masukkan nomor telepon terlebih dahulu', true);
         return;
@@ -15,9 +17,12 @@ export function initSessions() {
       btnPairing.textContent = 'Meminta kode...';
 
       try {
+        const payload = { phoneNumber };
+        if (sessionName) payload.sessionName = sessionName;
+
         const data = await fetchApi('/api/pairing', {
           method: 'POST',
-          body: { phoneNumber },
+          body: payload,
         });
 
         if (data.success && data.code) {
@@ -25,6 +30,8 @@ export function initSessions() {
           const boxEl = document.getElementById('pairing-box');
           if (codeEl) codeEl.textContent = data.code;
           if (boxEl) boxEl.style.display = 'block';
+          showToast(`Kode pairing berhasil dibuat untuk +${data.phoneNumber}`);
+          fetchSessions();
         } else {
           showToast(data.error || 'Gagal membuat kode pairing', true);
         }
@@ -33,6 +40,33 @@ export function initSessions() {
       } finally {
         btnPairing.disabled = false;
         btnPairing.textContent = 'Minta Kode Pairing';
+      }
+    });
+  }
+
+  const btnLogout = document.getElementById('btn-session-logout');
+  if (btnLogout) {
+    btnLogout.addEventListener('click', async () => {
+      const confirmed = window.confirm('Putuskan koneksi dan hapus autentikasi nomor dari sesi aktif saat ini?');
+      if (!confirmed) return;
+
+      btnLogout.disabled = true;
+      btnLogout.textContent = 'Memutuskan...';
+
+      try {
+        const data = await fetchApi('/api/session/logout', { method: 'POST' });
+        if (data.success) {
+          showToast('Sesi aktif berhasil diputuskan');
+          fetchOverviewStatus();
+          fetchSessions();
+        } else {
+          showToast(data.error || 'Gagal memutuskan sesi', true);
+        }
+      } catch (err) {
+        showToast('Gagal memproses logout sesi', true);
+      } finally {
+        btnLogout.disabled = false;
+        btnLogout.textContent = 'Putuskan Sesi Aktif';
       }
     });
   }

@@ -91,7 +91,10 @@
     <div id="tab-sessions" class="tab-view">
       <div class="bento-grid">
         <div class="bento-card col-7">
-          <div class="card-title">Profil Nomor Tersimpan</div>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+            <div class="card-title" style="margin-bottom: 0;">Profil Nomor Tersimpan</div>
+            <button class="btn btn-ghost btn-sm" id="btn-session-logout" style="color: var(--accent-red); font-size: 11px;">Putuskan Sesi Aktif</button>
+          </div>
           <table class="apple-table">
             <thead>
               <tr>
@@ -109,6 +112,10 @@
         <div class="bento-card col-5">
           <div class="card-title">Tautkan Nomor Baru</div>
           <div class="form-group">
+            <label class="form-label" for="pairing-session-name">Nama Profil Sesi (Opsional)</label>
+            <input type="text" id="pairing-session-name" class="form-input" placeholder="contoh: bot_kedua (default: sesi aktif)" />
+          </div>
+          <div class="form-group">
             <label class="form-label" for="pairing-input">Nomor Telepon WhatsApp</label>
             <input type="text" id="pairing-input" class="form-input" placeholder="628123456789" />
           </div>
@@ -118,7 +125,7 @@
             <div style="font-size: 11px; color: var(--text-tertiary); text-transform: uppercase;">Kode Pairing:</div>
             <div class="pairing-digits" id="pairing-code-text">---- ----</div>
             <div style="font-size: 12px; color: var(--text-secondary); line-height: 1.5;">
-              Buka WhatsApp &rarr; <b>Perangkat Tertaut</b> &rarr; <b>Tautkan dengan nomor telepon</b>
+              Buka WhatsApp di HP &rarr; <b>Perangkat Tertaut</b> &rarr; <b>Tautkan Perangkat</b> &rarr; <b>Tautkan dengan nomor telepon</b> lalu masukkan 8 kode di atas.
             </div>
           </div>
         </div>
