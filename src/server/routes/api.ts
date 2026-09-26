@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { waClient } from '../../core/whatsapp.js';
 import { messageQueue } from '../../queue/messageQueue.js';
 import { config } from '../../config/index.js';
-import { knowledgeManager } from '../../services/ai/index.js';
+import { knowledgeManager, aiService } from '../../services/ai/index.js';
 import { alertService } from '../../services/alerts/index.js';
 import { broadcastManager } from '../../services/broadcast/index.js';
 import { previewSpintax } from '../../utils/spintax.js';
@@ -224,6 +224,31 @@ export const apiRoutes: FastifyPluginAsync = async (fastify) => {
       message: 'Knowledge base reloaded successfully.',
       stats: knowledgeManager.getStats(),
     });
+  });
+
+  // POST /api/ai/query - Test Grounded AI Query
+  fastify.post('/api/ai/query', async (request, reply) => {
+    const { prompt } = (request.body as { prompt?: string }) || {};
+    if (!prompt || !prompt.trim()) {
+      return reply.code(400).send({
+        success: false,
+        error: 'Prompt query cannot be empty',
+      });
+    }
+
+    try {
+      const response = await aiService.generateResponse(prompt.trim());
+      return reply.send({
+        success: true,
+        prompt: prompt.trim(),
+        response,
+      });
+    } catch (err: unknown) {
+      return reply.code(500).send({
+        success: false,
+        error: (err as Error).message || 'Failed to generate AI response',
+      });
+    }
   });
 
   // POST /api/check-number - Verify if phone number is registered on WhatsApp
