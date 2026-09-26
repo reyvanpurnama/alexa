@@ -43,6 +43,8 @@ export class WhatsAppClient {
   private reconnectAttempts = 0;
   private maxReconnectAttempts = 10;
   private isReconnecting = false;
+  private reconnectTimer: NodeJS.Timeout | null = null;
+  private isExplicitLogout = false;
   public user: { id: string; name?: string } | null = null;
 
   private sessionsDir = path.join(process.cwd(), 'sessions', config.SESSION_NAME);
@@ -107,6 +109,11 @@ export class WhatsAppClient {
         this.status = 'DISCONNECTED';
         this.qrCode = null;
         this.user = null;
+
+        if (this.isExplicitLogout) {
+          logger.info('[WhatsApp] Connection closed due to explicit logout. Reconnect suppressed.');
+          return;
+        }
 
         const statusCode = (lastDisconnect?.error as Boom)?.output?.statusCode;
         const reason = DisconnectReason[statusCode as unknown as keyof typeof DisconnectReason] || statusCode;
@@ -183,6 +190,56 @@ export class WhatsAppClient {
     return code;
   }
 
+  /**
+   * Gracefully logs out, destroys the Baileys session, and re-initializes
+   * the socket into a clean state ready for a new pairing code or QR scan.
+   */
+  async logout(): Promise<void> {
+    logger.info('[WhatsApp] Initiating zero-downtime session logout and reset...');
+    this.isExplicitLogout = true;
+
+    if (this.reconnectTimer) {
+      clearTimeout(this.reconnectTimer);
+      this.reconnectTimer = null;
+    }
+    this.isReconnecting = false;
+    this.reconnectAttempts = 0;
+
+    // 1. Cleanly terminate Baileys socket if active
+    if (this.sock) {
+      try {
+        await this.sock.logout();
+      } catch (err) {
+        logger.debug({ err }, 'Sock logout error, closing stream directly');
+        try {
+          this.sock.end(undefined);
+        } catch {}
+      }
+      this.sock = null;
+    }
+
+    // 2. Wipe the local multi-file credentials directory
+    try {
+      if (fs.existsSync(this.sessionsDir)) {
+        fs.rmSync(this.sessionsDir, { recursive: true, force: true });
+        logger.info(`[WhatsApp] Deleted session files in ${this.sessionsDir}`);
+      }
+    } catch (err) {
+      logger.error({ err }, 'Failed to remove session directory');
+    }
+
+    // 3. Reset internal status
+    this.status = 'DISCONNECTED';
+    this.qrCode = null;
+    this.pairingCode = null;
+    this.user = null;
+    this.isExplicitLogout = false;
+
+    // 4. Spin up fresh socket ready for pairing or QR without restarting Fastify
+    logger.info('[WhatsApp] Re-initializing socket for new device linking...');
+    await this.initialize();
+  }
+
   private async handlePairingFlow(): Promise<void> {
     if (this.pairingCode) return;
 
@@ -223,7 +280,8 @@ export class WhatsAppClient {
     const delay = Math.min(3000 * this.reconnectAttempts, 20000);
     logger.info(`Reconnecting in ${delay / 1000}s (attempt ${this.reconnectAttempts}/${this.maxReconnectAttempts})`);
 
-    setTimeout(async () => {
+    this.reconnectTimer = setTimeout(async () => {
+      this.reconnectTimer = null;
       this.isReconnecting = false;
       try {
         await this.initialize();

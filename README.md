@@ -81,6 +81,7 @@ Command prefix is configurable in `.env` (default: `/`). Mobile keyboard autospa
 | `/reset` | `/clear`, `/clearchat` | AI | Public | Reset active conversation memory session |
 | `/mute` | `/pause`, `/snooze` | Automation | Owner | Mute AI auto-reply in current chat |
 | `/unmute` | `/resume` | Automation | Owner | Restore autonomous AI auto-reply |
+| `/logout` | `/disconnect`, `/unbind` | Automation | Owner | Disconnect session and prepare for new pairing |
 
 *Note: Administrative commands are automatically hidden from `/menu` for non-owner contacts.*
 
@@ -139,12 +140,13 @@ Include the `x-api-key` header with your configured `API_KEY` on all requests.
     "phoneNumber": "628123456789"
   }
   ```
-- `POST /api/pairing`: Request an 8-digit WhatsApp pairing code.
+- `POST /api/pairing`: Request an 8-digit WhatsApp pairing code for linking a new phone number.
   ```json
   {
     "phoneNumber": "628123456789"
   }
   ```
+- `POST /api/session/logout`: Disconnect active WhatsApp session and clear credentials without restarting the server.
 
 ---
 

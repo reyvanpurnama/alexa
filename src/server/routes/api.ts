@@ -89,6 +89,23 @@ export const apiRoutes: FastifyPluginAsync = async (fastify) => {
     }
   });
 
+  // POST /api/session/logout - Disconnect active session and reset credentials for new pairing
+  fastify.post('/api/session/logout', async (_request, reply) => {
+    try {
+      await waClient.logout();
+      return reply.send({
+        success: true,
+        message: 'Session disconnected and credentials cleared. Ready for new pairing or QR scan.',
+        status: waClient.getStatus(),
+      });
+    } catch (err: unknown) {
+      return reply.code(500).send({
+        success: false,
+        error: (err as Error).message || 'Failed to logout session',
+      });
+    }
+  });
+
   // POST /api/check-number - Verify if phone number is registered on WhatsApp
   fastify.post('/api/check-number', async (request, reply) => {
     const parse = checkNumberSchema.safeParse(request.body);
