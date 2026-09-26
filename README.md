@@ -82,6 +82,8 @@ Command prefix is configurable in `.env` (default: `/`). Mobile keyboard autospa
 | `/mute` | `/pause`, `/snooze` | Automation | Owner | Mute AI auto-reply in current chat |
 | `/unmute` | `/resume` | Automation | Owner | Restore autonomous AI auto-reply |
 | `/logout` | `/disconnect`, `/unbind` | Automation | Owner | Disconnect session and prepare for new pairing |
+| `/sessions` | `/profiles` | Automation | Owner | List saved session profiles on server |
+| `/switch` | `/changesession` | Automation | Owner | Hot-swap active session profile |
 
 *Note: Administrative commands are automatically hidden from `/menu` for non-owner contacts.*
 
@@ -147,6 +149,14 @@ Include the `x-api-key` header with your configured `API_KEY` on all requests.
   }
   ```
 - `POST /api/session/logout`: Disconnect active WhatsApp session and clear credentials without restarting the server.
+- `GET /api/sessions`: List all saved WhatsApp session profiles, active profile, and registration status.
+- `POST /api/sessions/switch`: Hot-swap active WhatsApp connection to another session profile without deleting credentials.
+  ```json
+  {
+    "sessionName": "backup_sales"
+  }
+  ```
+- `DELETE /api/sessions/:sessionName`: Delete a saved inactive session profile from disk.
 
 ---
 

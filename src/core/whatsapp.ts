@@ -47,7 +47,16 @@ export class WhatsAppClient {
   private isExplicitLogout = false;
   public user: { id: string; name?: string } | null = null;
 
-  private sessionsDir = path.join(process.cwd(), 'sessions', config.SESSION_NAME);
+  private baseSessionsDir = path.join(process.cwd(), 'sessions');
+  private currentSessionName: string = config.SESSION_NAME || 'alexa_session';
+
+  get sessionsDir(): string {
+    return path.join(this.baseSessionsDir, this.currentSessionName);
+  }
+
+  getActiveSessionName(): string {
+    return this.currentSessionName;
+  }
 
   getStatus(): WhatsAppStatus {
     return this.status;
@@ -238,6 +247,142 @@ export class WhatsAppClient {
     // 4. Spin up fresh socket ready for pairing or QR without restarting Fastify
     logger.info('[WhatsApp] Re-initializing socket for new device linking...');
     await this.initialize();
+  }
+
+  /**
+   * Scans the sessions directory and retrieves all saved session profiles with metadata
+   */
+  listSessions(): Array<{
+    name: string;
+    isActive: boolean;
+    registered: boolean;
+    phoneNumber: string | null;
+    pushName: string | null;
+  }> {
+    if (!fs.existsSync(this.baseSessionsDir)) {
+      return [];
+    }
+
+    const entries = fs.readdirSync(this.baseSessionsDir, { withFileTypes: true });
+    const result: Array<{
+      name: string;
+      isActive: boolean;
+      registered: boolean;
+      phoneNumber: string | null;
+      pushName: string | null;
+    }> = [];
+
+    for (const entry of entries) {
+      if (entry.isDirectory()) {
+        const sessionName = entry.name;
+        const credsPath = path.join(this.baseSessionsDir, sessionName, 'creds.json');
+        let registered = false;
+        let phoneNumber: string | null = null;
+        let pushName: string | null = null;
+
+        if (fs.existsSync(credsPath)) {
+          try {
+            const raw = fs.readFileSync(credsPath, 'utf-8');
+            const data = JSON.parse(raw);
+            registered = Boolean(data.registered);
+            if (data.me?.id) {
+              phoneNumber = data.me.id.split(':')[0].replace(/\D/g, '') || null;
+            }
+            if (data.me?.name) {
+              pushName = data.me.name;
+            }
+          } catch {}
+        }
+
+        result.push({
+          name: sessionName,
+          isActive: sessionName === this.currentSessionName,
+          registered,
+          phoneNumber,
+          pushName,
+        });
+      }
+    }
+
+    return result;
+  }
+
+  /**
+   * Hot-swaps the active WhatsApp connection to a different session profile
+   * without deleting or losing credentials of the previously active session.
+   */
+  async switchSession(sessionName: string): Promise<{
+    success: boolean;
+    sessionName: string;
+    isNew: boolean;
+  }> {
+    const cleanName = sessionName.trim().replace(/[^a-zA-Z0-9_-]/g, '');
+    if (!cleanName) {
+      throw new Error('Invalid session name. Use alphanumeric characters, hyphens, and underscores.');
+    }
+
+    if (cleanName === this.currentSessionName && this.isConnected()) {
+      return { success: true, sessionName: cleanName, isNew: false };
+    }
+
+    logger.info(`[WhatsApp] Hot-swapping session from "${this.currentSessionName}" to "${cleanName}"...`);
+    this.isExplicitLogout = true;
+
+    if (this.reconnectTimer) {
+      clearTimeout(this.reconnectTimer);
+      this.reconnectTimer = null;
+    }
+    this.isReconnecting = false;
+    this.reconnectAttempts = 0;
+
+    // Gracefully terminate current Baileys socket WITHOUT deleting files
+    if (this.sock) {
+      try {
+        this.sock.end(undefined);
+      } catch {}
+      this.sock = null;
+    }
+
+    const targetDir = path.join(this.baseSessionsDir, cleanName);
+    const isNew = !fs.existsSync(targetDir) || !fs.existsSync(path.join(targetDir, 'creds.json'));
+
+    // Switch active pointer
+    this.currentSessionName = cleanName;
+    this.status = 'INITIALIZING';
+    this.qrCode = null;
+    this.pairingCode = null;
+    this.user = null;
+    this.isExplicitLogout = false;
+
+    // Re-initialize socket with new session credentials
+    await this.initialize();
+
+    return {
+      success: true,
+      sessionName: cleanName,
+      isNew,
+    };
+  }
+
+  /**
+   * Deletes a saved session profile from disk. Active session cannot be deleted directly.
+   */
+  deleteSession(sessionName: string): boolean {
+    const cleanName = sessionName.trim().replace(/[^a-zA-Z0-9_-]/g, '');
+    if (!cleanName) return false;
+
+    if (cleanName === this.currentSessionName) {
+      throw new Error('Cannot delete the active session. Switch to another session first.');
+    }
+
+    const targetDir = path.join(this.baseSessionsDir, cleanName);
+    if (fs.existsSync(targetDir)) {
+      fs.rmSync(targetDir, { recursive: true, force: true });
+      logger.info(`[WhatsApp] Deleted session profile: ${cleanName}`);
+      return true;
+    }
+
+    return false;
   }
 
   private async handlePairingFlow(): Promise<void> {
