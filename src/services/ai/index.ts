@@ -3,9 +3,10 @@ import OpenAI from 'openai';
 import { config } from '../../config/index.js';
 import { conversationMemory, type ChatMessage } from './memory.js';
 import { takeoverManager } from './takeover.js';
+import { messageDebouncer } from './debouncer.js';
 import { aiTools, executeTool } from './tools.js';
 
-export { conversationMemory, takeoverManager, type ChatMessage };
+export { conversationMemory, takeoverManager, messageDebouncer, type ChatMessage };
 
 export interface AIOptions {
   systemPrompt?: string;
