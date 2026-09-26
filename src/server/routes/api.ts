@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { waClient } from '../../core/whatsapp.js';
 import { messageQueue } from '../../queue/messageQueue.js';
 import { config } from '../../config/index.js';
+import { knowledgeManager } from '../../services/ai/index.js';
 
 const sendMessageSchema = z.object({
   to: z.string().min(5, 'Target phone number or JID is required'),
@@ -173,6 +174,25 @@ export const apiRoutes: FastifyPluginAsync = async (fastify) => {
         error: (err as Error).message || 'Failed to delete session',
       });
     }
+  });
+
+  // GET /api/knowledge - Inspect current active business knowledge context
+  fastify.get('/api/knowledge', async (_request, reply) => {
+    return reply.send({
+      success: true,
+      stats: knowledgeManager.getStats(),
+      context: knowledgeManager.getKnowledgeContext(),
+    });
+  });
+
+  // POST /api/knowledge/reload - Re-index knowledge base files from disk
+  fastify.post('/api/knowledge/reload', async (_request, reply) => {
+    knowledgeManager.reload();
+    return reply.send({
+      success: true,
+      message: 'Knowledge base reloaded successfully.',
+      stats: knowledgeManager.getStats(),
+    });
   });
 
   // POST /api/check-number - Verify if phone number is registered on WhatsApp

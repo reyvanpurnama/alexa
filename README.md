@@ -84,12 +84,18 @@ Command prefix is configurable in `.env` (default: `/`). Mobile keyboard autospa
 | `/logout` | `/disconnect`, `/unbind` | Automation | Owner | Disconnect session and prepare for new pairing |
 | `/sessions` | `/profiles` | Automation | Owner | List saved session profiles on server |
 | `/switch` | `/changesession` | Automation | Owner | Hot-swap active session profile |
+| `/reloadkb` | `/refreshkb` | Automation | Owner | Reload business knowledge documents |
 
 *Note: Administrative commands are automatically hidden from `/menu` for non-owner contacts.*
 
 ---
 
 ## Conversational AI Engine
+
+### Grounded Business Knowledge Base
+- Documents placed inside `knowledge/` (`business.md` and `faq.json`) are automatically indexed and injected into the AI's grounding context.
+- Grounding prevents hallucinations by strictly guiding answers based on official pricing, verified bank accounts, and business operating policies.
+- Hot-reload knowledge at any time via `/reloadkb` command or `POST /api/knowledge/reload`.
 
 ### Multi-Turn Session Memory
 - **Sliding Window**: Retains the last `AI_MAX_HISTORY` messages (default: 6) per session to maintain context without exceeding token quotas.
@@ -157,6 +163,8 @@ Include the `x-api-key` header with your configured `API_KEY` on all requests.
   }
   ```
 - `DELETE /api/sessions/:sessionName`: Delete a saved inactive session profile from disk.
+- `GET /api/knowledge`: Inspect loaded business knowledge base context and stats.
+- `POST /api/knowledge/reload`: Force reload and re-index knowledge documents from disk.
 
 ---
 

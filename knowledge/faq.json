@@ -1,0 +1,17 @@
+[
+  {
+    "topic": "Cara Aktivasi Layanan",
+    "question": "Bagaimana cara berlangganan atau aktivasi layanan?",
+    "answer": "Pilih paket yang diinginkan (Starter, Pro, atau Enterprise), lakukan pembayaran ke rekening resmi BCA/Mandiri kami, lalu kirimkan bukti transfer. Akun dan API token Anda akan aktif dalam 10-15 menit."
+  },
+  {
+    "topic": "Keamanan Nomor",
+    "question": "Apakah nomor WhatsApp saya aman dari blokir (banned)?",
+    "answer": "Sistem kami dilengkapi dengan anti-ban leaky-bucket queue dan random jitter delay (2500ms - 5000ms) untuk meniru perilaku manusia, meminimalkan risiko deteksi spam oleh Meta."
+  },
+  {
+    "topic": "Hubungi Manusia / Admin",
+    "question": "Bagaimana jika saya ingin berbicara langsung dengan CS manusia?",
+    "answer": "Anda cukup mengetik /human di chat ini kapan saja. Asisten AI akan otomatis dijeda selama 60 menit dan tim admin kami akan segera membantu Anda secara manual."
+  }
+]

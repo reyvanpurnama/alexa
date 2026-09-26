@@ -5,8 +5,9 @@ import { conversationMemory, type ChatMessage } from './memory.js';
 import { takeoverManager } from './takeover.js';
 import { messageDebouncer } from './debouncer.js';
 import { aiTools, executeTool } from './tools.js';
+import { knowledgeManager } from './knowledge.js';
 
-export { conversationMemory, takeoverManager, messageDebouncer, type ChatMessage };
+export { conversationMemory, takeoverManager, messageDebouncer, knowledgeManager, type ChatMessage };
 
 export interface AIOptions {
   systemPrompt?: string;
@@ -17,11 +18,15 @@ export interface AIOptions {
 class AIService {
   /**
    * Generates text response using the configured AI provider,
-   * with multi-turn conversation memory and autonomous tool calling support.
+   * grounded with business knowledge base, multi-turn memory, and autonomous tool calling.
    */
   async generateResponse(prompt: string, options?: AIOptions): Promise<string> {
     const provider = config.AI_PROVIDER;
-    const systemPrompt = options?.systemPrompt || config.AI_SYSTEM_PROMPT;
+    const baseSystemPrompt = options?.systemPrompt || config.AI_SYSTEM_PROMPT;
+    const knowledgeContext = knowledgeManager.getKnowledgeContext();
+    const systemPrompt = knowledgeContext
+      ? `${baseSystemPrompt}\n\n${knowledgeContext}`
+      : baseSystemPrompt;
     const history = options?.sessionId ? conversationMemory.getHistory(options.sessionId) : [];
 
     let response = '';
