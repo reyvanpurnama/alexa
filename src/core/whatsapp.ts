@@ -1,4 +1,3 @@
-import readline from 'readline';
 import {
   makeWASocket,
   useMultiFileAuthState,
@@ -317,17 +316,7 @@ export class WhatsAppClient {
   private async handlePairingFlow(): Promise<void> {
     if (this.pairingCode) return;
 
-    let phone = config.PAIRING_PHONE_NUMBER;
-    if (!phone && process.stdin.isTTY) {
-      const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
-      phone = await new Promise<string>((resolve) => {
-        rl.question('Enter phone number for pairing (e.g. 628123456789): ', (ans) => {
-          rl.close();
-          resolve(ans.trim());
-        });
-      });
-    }
-
+    const phone = config.PAIRING_PHONE_NUMBER;
     if (phone) {
       try {
         await this.requestPairing(phone);
@@ -335,8 +324,9 @@ export class WhatsAppClient {
         logger.error({ err }, 'Failed to generate pairing code');
       }
     } else {
-      logger.warn(
-        'USE_PAIRING_CODE enabled without phone number. Set PAIRING_PHONE_NUMBER or use POST /api/pairing'
+      this.status = 'PAIRING_READY';
+      logger.info(
+        `[WhatsApp] Sesi "${this.getActiveSessionName()}" siap untuk dipairing. Minta kode pairing lewat Dashboard (Tab 'Nomor & Sesi') atau API POST /api/pairing`
       );
     }
   }

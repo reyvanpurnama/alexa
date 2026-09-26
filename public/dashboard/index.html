@@ -98,34 +98,44 @@
           <table class="apple-table">
             <thead>
               <tr>
-                <th>Profil</th>
-                <th>Nomor Telepon</th>
+                <th>Profil Sesi</th>
+                <th>Nomor WhatsApp</th>
+                <th>Status</th>
                 <th style="text-align: right;">Aksi</th>
               </tr>
             </thead>
             <tbody id="sessions-table-body">
-              <tr><td colspan="3" style="text-align: center; color: var(--text-tertiary);">Memuat sesi...</td></tr>
+              <tr><td colspan="4" style="text-align: center; color: var(--text-tertiary);">Memuat sesi...</td></tr>
             </tbody>
           </table>
         </div>
 
         <div class="bento-card col-5">
-          <div class="card-title">Tautkan Nomor Baru</div>
+          <div class="card-title" id="pairing-card-title">Tautkan Nomor Baru</div>
           <div class="form-group">
-            <label class="form-label" for="pairing-session-name">Nama Profil Sesi (Opsional)</label>
-            <input type="text" id="pairing-session-name" class="form-input" placeholder="contoh: bot_kedua (default: sesi aktif)" />
+            <label class="form-label" for="pairing-session-name">Nama Profil Sesi</label>
+            <input type="text" id="pairing-session-name" class="form-input" placeholder="contoh: alexa_session atau cs_kedua" />
+            <div style="font-size: 11px; color: var(--text-tertiary); margin-top: 4px;">Pilih atau ketik nama profil untuk menyimpan kredensial nomor ini.</div>
           </div>
           <div class="form-group">
-            <label class="form-label" for="pairing-input">Nomor Telepon WhatsApp</label>
-            <input type="text" id="pairing-input" class="form-input" placeholder="628123456789" />
+            <label class="form-label" for="pairing-input">Nomor WhatsApp (dengan kode negara)</label>
+            <input type="text" id="pairing-input" class="form-input" placeholder="contoh: 628123456789" />
           </div>
           <button class="btn btn-primary" id="btn-request-pairing" style="width: 100%;">Minta Kode Pairing</button>
 
           <div class="pairing-box" id="pairing-box">
-            <div style="font-size: 11px; color: var(--text-tertiary); text-transform: uppercase;">Kode Pairing:</div>
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <span style="font-size: 11px; color: var(--text-tertiary); text-transform: uppercase;">Kode Pairing:</span>
+              <button class="pairing-copy-btn" id="btn-copy-pairing">Salin Kode</button>
+            </div>
             <div class="pairing-digits" id="pairing-code-text">---- ----</div>
-            <div style="font-size: 12px; color: var(--text-secondary); line-height: 1.5;">
-              Buka WhatsApp di HP &rarr; <b>Perangkat Tertaut</b> &rarr; <b>Tautkan Perangkat</b> &rarr; <b>Tautkan dengan nomor telepon</b> lalu masukkan 8 kode di atas.
+            <div id="pairing-status-hint" style="font-size: 11px; color: var(--accent-amber); margin-bottom: 8px;">⏳ Menunggu Anda memasukkan kode di HP...</div>
+            <div style="font-size: 12px; color: var(--text-secondary); line-height: 1.5; text-align: left; background: rgba(255,255,255,0.03); padding: 10px; border-radius: var(--radius-sm); border: 1px solid var(--border-subtle);">
+              <b>Cara tautkan di WhatsApp HP:</b><br/>
+              1. Buka aplikasi WhatsApp di HP Anda.<br/>
+              2. Buka menu <b>Setelan</b> &rarr; <b>Perangkat Tertaut</b>.<br/>
+              3. Klik <b>Tautkan Perangkat</b> &rarr; pilih <b>Tautkan dengan nomor telepon saja</b>.<br/>
+              4. Masukkan 8 digit kode yang tertera di atas.
             </div>
           </div>
         </div>

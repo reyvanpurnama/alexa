@@ -376,6 +376,68 @@ header {
   border-bottom: none;
 }
 
+/* Badges */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  font-weight: 500;
+  padding: 3px 8px;
+  border-radius: var(--radius-pill);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.2;
+}
+
+.badge-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+}
+
+.badge-connected {
+  background: rgba(48, 209, 88, 0.12);
+  color: var(--accent-green);
+  border: 1px solid rgba(48, 209, 88, 0.25);
+}
+.badge-connected .badge-dot { background: var(--accent-green); }
+
+.badge-waiting {
+  background: rgba(255, 159, 10, 0.12);
+  color: var(--accent-amber);
+  border: 1px solid rgba(255, 159, 10, 0.25);
+}
+.badge-waiting .badge-dot { background: var(--accent-amber); }
+
+.badge-saved {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-subtle);
+}
+.badge-saved .badge-dot { background: var(--text-tertiary); }
+
+.badge-empty {
+  background: transparent;
+  color: var(--text-tertiary);
+  border: 1px dashed var(--border-subtle);
+}
+
+.pairing-copy-btn {
+  background: var(--bg-surface-elevated);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-primary);
+  font-size: 11px;
+  font-weight: 500;
+  padding: 3px 8px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.pairing-copy-btn:hover {
+  background: var(--bg-surface-hover);
+  border-color: var(--border-strong);
+}
+
 /* Pairing Code Display */
 .pairing-box {
   margin-top: 14px;

@@ -53,6 +53,9 @@ export const sessionsRoutes: FastifyPluginAsync = async (fastify) => {
     return reply.send({
       success: true,
       activeSession: waClient.getActiveSessionName(),
+      status: waClient.getStatus(),
+      isConnected: waClient.isConnected(),
+      activeUser: waClient.user,
       sessions: waClient.listSessions(),
     });
   });
