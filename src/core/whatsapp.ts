@@ -58,6 +58,10 @@ export class WhatsAppClient {
     return this.currentSessionName;
   }
 
+  getSocket(): WASocket | null {
+    return this.sock;
+  }
+
   getStatus(): WhatsAppStatus {
     return this.status;
   }

@@ -6,6 +6,7 @@ import { logger } from '../utils/logger.js';
 
 import { dispatchWebhook } from '../utils/webhook.js';
 import { aiService, takeoverManager, messageDebouncer } from '../services/ai/index.js';
+import { alertService } from '../services/alerts/index.js';
 
 export { type SerializedMessage };
 
@@ -63,37 +64,79 @@ export async function handleIncomingMessage(sock: WASocket, rawMsg: WAMessage): 
     if (executed) return;
   }
 
-  // Autonomous AI Auto-Reply & Media Fallbacks (Private chats, non-command)
-  if (!m.hasPrefix && config.AI_AUTO_REPLY && !m.isGroup) {
-    // If chat is currently muted or handled by human agent, skip AI reply
-    if (takeoverManager.isMuted(m.senderNumber) || takeoverManager.isMuted(m.from)) {
-      return;
-    }
+  // Autonomous AI Auto-Reply & Media / Lead Alerts (Private chats, non-command)
+  if (!m.hasPrefix && !m.isGroup) {
+    // 1. Payment Receipt Detection & Real-time Owner Forwarding
+    const isMedia = m.type === 'image' || m.type === 'document';
+    if (isMedia && alertService.isPaymentReceiptIntent(m.body)) {
+      const timeStr = new Intl.DateTimeFormat('id-ID', {
+        timeZone: 'Asia/Jakarta',
+        hour: '2-digit',
+        minute: '2-digit',
+      }).format(new Date());
 
-    // 1. Fallback for Voice Note / Audio
-    if (m.type === 'audio') {
+      const alertHeader = [
+        `[Notifikasi Bukti Pembayaran]`,
+        `Pelanggan: +${m.senderNumber} (${m.pushName || 'Pelanggan'})`,
+        `Waktu: ${timeStr} WIB`,
+        `Keterangan: "${m.body || '(Tanpa keterangan)'}"`,
+      ].join('\n');
+
+      // Forward media to owners
+      await alertService.forwardToOwners(rawMsg, alertHeader, sock);
+
+      // Auto-mute AI for 60m so human admin can verify & confirm order
+      takeoverManager.mute(m.from, 60, 'payment_verification');
+      takeoverManager.mute(m.senderNumber, 60, 'payment_verification');
+
+      // Dispatch webhook
+      dispatchWebhook('payment.received', {
+        from: m.from,
+        senderNumber: m.senderNumber,
+        senderName: m.pushName,
+        caption: m.body,
+        messageId: m.id,
+        type: m.type,
+        timestamp: Math.floor(Date.now() / 1000),
+      }).catch(() => {});
+
       await m.reply(
-        'Saat ini asisten belum dapat memproses pesan suara secara langsung. Mohon ketikkan pesan Anda dalam bentuk teks, atau ketik /human untuk berbicara dengan admin.'
+        'Terima kasih. Bukti pembayaran Anda telah kami terima dan diteruskan ke tim admin untuk verifikasi. Mohon tunggu konfirmasi selanjutnya.'
       );
       return;
     }
 
-    // 2. Fallback for Media (Image / Video / Document) without text caption
-    if ((m.type === 'image' || m.type === 'video' || m.type === 'document') && !m.body) {
-      await m.reply(
-        'Terima kasih atas lampiran yang Anda kirimkan. Mohon sertakan keterangan atau pertanyaan mengenai lampiran tersebut, atau ketik /human untuk bantuan admin.'
-      );
-      return;
-    }
+    if (config.AI_AUTO_REPLY) {
+      // If chat is currently muted or handled by human agent, skip AI reply
+      if (takeoverManager.isMuted(m.senderNumber) || takeoverManager.isMuted(m.from)) {
+        return;
+      }
 
-    // 3. Process text or captioned media through the Debouncing Buffer (handles rapid bursts)
-    if (m.body) {
-      const promptText =
-        m.type === 'image' || m.type === 'video'
-          ? `[Pelanggan melampirkan foto/video produk]: ${m.body}`
-          : m.body;
+      // 2. Fallback for Voice Note / Audio
+      if (m.type === 'audio') {
+        await m.reply(
+          'Saat ini asisten belum dapat memproses pesan suara secara langsung. Mohon ketikkan pesan Anda dalam bentuk teks, atau ketik /human untuk berbicara dengan admin.'
+        );
+        return;
+      }
 
-      messageDebouncer.enqueue(m, promptText);
+      // 3. Fallback for Media (Image / Video / Document) without text caption
+      if ((m.type === 'image' || m.type === 'video' || m.type === 'document') && !m.body) {
+        await m.reply(
+          'Terima kasih atas lampiran yang Anda kirimkan. Mohon sertakan keterangan atau pertanyaan mengenai lampiran tersebut, atau ketik /human untuk bantuan admin.'
+        );
+        return;
+      }
+
+      // 4. Process text or captioned media through the Debouncing Buffer (handles rapid bursts)
+      if (m.body) {
+        const promptText =
+          m.type === 'image' || m.type === 'video'
+            ? `[Pelanggan melampirkan foto/video produk]: ${m.body}`
+            : m.body;
+
+        messageDebouncer.enqueue(m, promptText);
+      }
     }
   }
 }

@@ -4,6 +4,7 @@ import { waClient } from '../../core/whatsapp.js';
 import { messageQueue } from '../../queue/messageQueue.js';
 import { config } from '../../config/index.js';
 import { knowledgeManager } from '../../services/ai/index.js';
+import { alertService } from '../../services/alerts/index.js';
 
 const sendMessageSchema = z.object({
   to: z.string().min(5, 'Target phone number or JID is required'),
@@ -303,6 +304,34 @@ export const apiRoutes: FastifyPluginAsync = async (fastify) => {
       return reply.code(500).send({
         success: false,
         error: (err as Error).message || 'Failed to send media',
+      });
+    }
+  });
+
+  // POST /api/alerts/test - Test Owner Alerts Dispatch
+  fastify.post('/api/alerts/test', async (request, reply) => {
+    const body = (request.body as { message?: string }) || {};
+    const timeStr = new Intl.DateTimeFormat('id-ID', {
+      timeZone: 'Asia/Jakarta',
+      hour: '2-digit',
+      minute: '2-digit',
+    }).format(new Date());
+
+    const alertMessage =
+      body.message ||
+      `[Uji Coba Notifikasi Owner]\nSistem peringatan real-time Alexa beroperasi dengan normal.\nWaktu: ${timeStr} WIB`;
+
+    try {
+      await alertService.notifyOwners(alertMessage);
+      return reply.send({
+        success: true,
+        message: 'Owner notification dispatched successfully',
+        configuredOwners: config.OWNER_NUMBERS,
+      });
+    } catch (err: unknown) {
+      return reply.code(500).send({
+        success: false,
+        error: (err as Error).message || 'Failed to dispatch owner notification',
       });
     }
   });

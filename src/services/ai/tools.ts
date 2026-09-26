@@ -4,6 +4,7 @@ import { takeoverManager } from './takeover.js';
 import { dispatchWebhook } from '../../utils/webhook.js';
 import { logger } from '../../utils/logger.js';
 import { config } from '../../config/index.js';
+import { alertService } from '../alerts/index.js';
 
 export interface ToolExecutionContext {
   sessionId?: string;
@@ -101,6 +102,25 @@ export async function executeTool(
       }).catch(() => {});
 
       logger.warn(`[Handover] Human agent requested by ${targetNumber}. Reason: ${reason}`);
+
+      // Dispatch real-time WhatsApp alert to business owners
+      const timeStr = new Intl.DateTimeFormat('id-ID', {
+        timeZone: 'Asia/Jakarta',
+        hour: '2-digit',
+        minute: '2-digit',
+      }).format(new Date());
+
+      const alertText = [
+        `[Eskalasi Admin Diperlukan]`,
+        `Pelanggan: +${targetNumber}`,
+        `Waktu: ${timeStr} WIB`,
+        `Pemicu: Asisten AI (Intent Detection)`,
+        `Alasan: "${reason}"`,
+      ].join('\n');
+
+      alertService.notifyOwners(alertText).catch((err) => {
+        logger.error({ err }, '[AlertService] Failed to notify owners on AI handover');
+      });
 
       return JSON.stringify({
         status: 'success',

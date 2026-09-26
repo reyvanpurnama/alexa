@@ -58,9 +58,10 @@ src/
 ├── core/               # Baileys socket, serializer, and command manager
 ├── handlers/           # Inbound message event dispatcher
 ├── queue/              # Outbound message throttler (anti-ban delay)
-├── server/             # Fastify REST API and Swagger routes
+├── server/             # Fastify REST API, Swagger, and Dashboard routes
 ├── services/
-│   └── ai/             # Multi-provider engine, memory, takeover, and tools
+│   ├── ai/             # Multi-provider engine, memory, takeover, and tools
+│   └── alerts/         # Real-time owner notifications & payment forwarding
 ├── types/              # TypeScript interfaces
 └── utils/              # Logger, webhook dispatcher, and JID normalizer
 ```
@@ -165,6 +166,17 @@ Include the `x-api-key` header with your configured `API_KEY` on all requests.
 - `DELETE /api/sessions/:sessionName`: Delete a saved inactive session profile from disk.
 - `GET /api/knowledge`: Inspect loaded business knowledge base context and stats.
 - `POST /api/knowledge/reload`: Force reload and re-index knowledge documents from disk.
+- `POST /api/alerts/test`: Dispatch an instant test alert to all configured `OWNER_NUMBERS`.
+
+---
+
+## Real-Time Alerts & Payment Forwarding
+
+Designed for high-converting business operations with zero friction:
+
+- **Payment Proof Auto-Forwarding**: Inbound payment receipts (images, documents, PDFs) with transfer intent keywords (`bukti`, `transfer`, `tf`, `struk`, `lunas`, `bca`, `qris`, etc.) are automatically forwarded to all configured `OWNER_NUMBERS` with an Apple HIG-formatted context note.
+- **Silent Human Takeover**: AI auto-reply is automatically snoozed for 60 minutes whenever payment proof is received or human handover is requested, preventing automated responses from interrupting business transactions.
+- **Escalation Notification**: When a customer triggers `/human` or when the AI autonomously triggers `request_human_handover`, all owners receive an immediate WhatsApp notification with customer details and escalation reason.
 
 ---
 

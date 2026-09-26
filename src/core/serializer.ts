@@ -64,7 +64,10 @@ function extractBody(content: proto.IMessage | null | undefined): { body: string
     return { body: content.videoMessage.caption || '', type: 'video' };
   }
   if (content.documentMessage) {
-    return { body: content.documentMessage.caption || '', type: 'document' };
+    return {
+      body: content.documentMessage.caption || content.documentMessage.fileName || '',
+      type: 'document',
+    };
   }
   if (content.audioMessage) {
     return { body: '', type: 'audio' };
