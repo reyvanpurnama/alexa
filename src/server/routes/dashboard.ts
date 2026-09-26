@@ -548,6 +548,101 @@ export const dashboardRoutes: FastifyPluginAsync = async (fastify) => {
         <button class="btn btn-secondary" id="btn-send-test" style="width: 100%;">Kirim Pesan Uji Coba</button>
       </div>
     </div>
+
+    <!-- Section: Smart Broadcast Engine (Anti-Ban & Spintax) -->
+    <div class="bento-grid" style="margin-top: 24px;">
+      <div class="bento-card col-12">
+        <div class="card-header">
+          <div>
+            <h2 class="section-title">Smart Broadcast Engine (Anti-Ban & Spintax)</h2>
+            <p class="section-desc">Kirim pesan massal dengan variasi Spintax unik, delay acak, dan jeda batch otomatis untuk melindungi akun dari pemblokiran Meta.</p>
+          </div>
+          <div id="bc-status-badge" class="status-badge" style="display: none;">
+            <span class="status-dot"></span>
+            <span id="bc-status-text">IDLE</span>
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
+          <!-- Left Column: Broadcast Inputs -->
+          <div>
+            <div class="form-group">
+              <label class="form-label" for="bc-targets">Daftar Nomor Tujuan (Pisahkan dengan baris baru atau koma)</label>
+              <textarea id="bc-targets" class="form-textarea" rows="4" placeholder="081234567890&#10;089876543210&#10;6285166328091"></textarea>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="bc-message">Template Pesan (Mendukung Sintaks Spintax <code>{A|B}</code> & Variabel <code>{{name}}</code>)</label>
+              <textarea id="bc-message" class="form-textarea" rows="4" placeholder="{Halo|Hai|Selamat pagi} {kak|bunda|mas}, ada promo spesial untukmu hari ini! Dapatkan diskon hingga 50% khusus pelanggan setia kami."></textarea>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px;">
+              <div>
+                <label class="form-label" for="bc-min-delay">Min Delay (detik)</label>
+                <input type="number" id="bc-min-delay" class="form-input" value="4" min="1" max="60" />
+              </div>
+              <div>
+                <label class="form-label" for="bc-max-delay">Max Delay (detik)</label>
+                <input type="number" id="bc-max-delay" class="form-input" value="8" min="2" max="120" />
+              </div>
+            </div>
+
+            <div style="display: flex; gap: 10px;">
+              <button class="btn btn-secondary" id="btn-bc-preview" style="flex: 1;">Pratinjau Variasi</button>
+              <button class="btn btn-primary" id="btn-bc-start" style="flex: 1;">Mulai Broadcast</button>
+            </div>
+          </div>
+
+          <!-- Right Column: Live Monitor & Previews -->
+          <div style="display: flex; flex-direction: column; gap: 16px;">
+            <!-- Live Progress Monitor -->
+            <div id="bc-monitor-card" style="background: var(--bg-surface-elevated); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 18px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                <span style="font-size: 13px; font-weight: 600; color: var(--text-secondary);">Pemantauan Pengiriman Langsung</span>
+                <span id="bc-kpi-progress" style="font-family: var(--font-mono); font-size: 13px; color: var(--accent-blue);">0 / 0 (0%)</span>
+              </div>
+
+              <!-- Progress bar -->
+              <div style="width: 100%; height: 8px; background: rgba(255,255,255,0.06); border-radius: var(--radius-pill); overflow: hidden; margin-bottom: 16px;">
+                <div id="bc-progress-bar" style="width: 0%; height: 100%; background: var(--accent-blue); transition: width 0.3s ease;"></div>
+              </div>
+
+              <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; text-align: center; margin-bottom: 16px;">
+                <div style="background: rgba(255,255,255,0.03); border-radius: var(--radius-sm); padding: 8px;">
+                  <div style="font-size: 11px; color: var(--text-tertiary);">Terkirim</div>
+                  <div id="bc-kpi-sent" style="font-size: 18px; font-weight: 700; color: var(--accent-green);">0</div>
+                </div>
+                <div style="background: rgba(255,255,255,0.03); border-radius: var(--radius-sm); padding: 8px;">
+                  <div style="font-size: 11px; color: var(--text-tertiary);">Gagal</div>
+                  <div id="bc-kpi-failed" style="font-size: 18px; font-weight: 700; color: var(--accent-red);">0</div>
+                </div>
+                <div style="background: rgba(255,255,255,0.03); border-radius: var(--radius-sm); padding: 8px;">
+                  <div style="font-size: 11px; color: var(--text-tertiary);">Sisa Antrean</div>
+                  <div id="bc-kpi-remaining" style="font-size: 18px; font-weight: 700; color: var(--text-secondary);">0</div>
+                </div>
+              </div>
+
+              <div style="display: flex; gap: 8px;">
+                <button class="btn btn-secondary btn-sm" id="btn-bc-pause" style="flex: 1;" disabled>Jeda</button>
+                <button class="btn btn-secondary btn-sm" id="btn-bc-resume" style="flex: 1;" disabled>Lanjut</button>
+                <button class="btn btn-danger btn-sm" id="btn-bc-cancel" style="flex: 1;" disabled>Batalkan</button>
+              </div>
+            </div>
+
+            <!-- Preview Card -->
+            <div id="bc-preview-card" style="background: var(--bg-surface-elevated); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 18px; flex: 1;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                <span style="font-size: 13px; font-weight: 600; color: var(--text-secondary);">Contoh Variasi Spintax</span>
+                <span id="bc-total-variations" style="font-size: 12px; color: var(--accent-purple); font-family: var(--font-mono);">0 variasi</span>
+              </div>
+              <div id="bc-preview-list" style="font-size: 13px; color: var(--text-secondary); display: flex; flex-direction: column; gap: 8px;">
+                <p style="color: var(--text-tertiary); font-style: italic;">Klik tombol "Pratinjau Variasi" untuk melihat sampel kalimat unik.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 
   <div id="toast-container"></div>
@@ -760,9 +855,162 @@ export const dashboardRoutes: FastifyPluginAsync = async (fastify) => {
       }
     });
 
+    // Broadcast Engine scripts
+    let bcPollTimer = null;
+
+    async function fetchBroadcastStatus() {
+      try {
+        const res = await fetch('/api/broadcast/status', {
+          headers: { 'x-api-key': API_KEY }
+        });
+        const data = await res.json();
+        if (!data.success) return;
+
+        const job = data.currentJob;
+        const badge = document.getElementById('bc-status-badge');
+        const badgeText = document.getElementById('bc-status-text');
+        const btnPause = document.getElementById('btn-bc-pause');
+        const btnResume = document.getElementById('btn-bc-resume');
+        const btnCancel = document.getElementById('btn-bc-cancel');
+
+        if (!job) {
+          badge.style.display = 'none';
+          btnPause.disabled = true;
+          btnResume.disabled = true;
+          btnCancel.disabled = true;
+          return;
+        }
+
+        badge.style.display = 'inline-flex';
+        badge.className = 'status-badge ' + (job.status === 'running' ? 'CONNECTED' : job.status === 'paused' ? 'PAIRING_READY' : 'DISCONNECTED');
+        badgeText.textContent = job.status.toUpperCase();
+
+        const progressPercent = job.progressPercent || 0;
+        document.getElementById('bc-kpi-progress').textContent = (job.sentCount + job.failedCount) + ' / ' + job.totalTargets + ' (' + progressPercent + '%)';
+        document.getElementById('bc-progress-bar').style.width = progressPercent + '%';
+        document.getElementById('bc-kpi-sent').textContent = job.sentCount;
+        document.getElementById('bc-kpi-failed').textContent = job.failedCount;
+        document.getElementById('bc-kpi-remaining').textContent = Math.max(0, job.totalTargets - (job.sentCount + job.failedCount));
+
+        btnPause.disabled = job.status !== 'running';
+        btnResume.disabled = job.status !== 'paused';
+        btnCancel.disabled = job.status !== 'running' && job.status !== 'paused';
+
+        if (job.status === 'running' || job.status === 'paused') {
+          if (!bcPollTimer) {
+            bcPollTimer = setInterval(fetchBroadcastStatus, 2500);
+          }
+        } else {
+          if (bcPollTimer) {
+            clearInterval(bcPollTimer);
+            bcPollTimer = null;
+          }
+        }
+      } catch (err) {}
+    }
+
+    // Preview button
+    document.getElementById('btn-bc-preview').addEventListener('click', async () => {
+      const template = document.getElementById('bc-message').value.trim();
+      if (!template) {
+        showToast('Masukkan template pesan terlebih dahulu', true);
+        return;
+      }
+      try {
+        const res = await fetch('/api/broadcast/preview', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'x-api-key': API_KEY },
+          body: JSON.stringify({ template, count: 3 })
+        });
+        const data = await res.json();
+        if (data.success) {
+          document.getElementById('bc-total-variations').textContent = data.totalVariations + ' variasi';
+          const listEl = document.getElementById('bc-preview-list');
+          listEl.innerHTML = data.previews.map((p, idx) => 
+            '<div style="background: rgba(255,255,255,0.03); border-left: 2px solid var(--accent-blue); padding: 8px 12px; border-radius: 4px;">' +
+              '<div style="font-size: 11px; color: var(--text-tertiary); margin-bottom: 2px;">Variasi #' + (idx + 1) + ':</div>' +
+              '<div>' + p + '</div>' +
+            '</div>'
+          ).join('');
+          showToast('Pratinjau variasi Spintax berhasil dibuat!');
+        } else {
+          showToast(data.error || 'Gagal memuat pratinjau', true);
+        }
+      } catch (e) {
+        showToast('Gagal memuat pratinjau variasi', true);
+      }
+    });
+
+    // Start Broadcast button
+    document.getElementById('btn-bc-start').addEventListener('click', async () => {
+      const rawTargets = document.getElementById('bc-targets').value.trim();
+      const message = document.getElementById('bc-message').value.trim();
+      const minDelaySec = parseInt(document.getElementById('bc-min-delay').value, 10) || 4;
+      const maxDelaySec = parseInt(document.getElementById('bc-max-delay').value, 10) || 8;
+
+      if (!rawTargets || !message) {
+        showToast('Nomor tujuan dan template pesan wajib diisi', true);
+        return;
+      }
+
+      const targets = rawTargets.split(/[\\s,;\\n]+/).filter(t => t.trim().length >= 8);
+      if (targets.length === 0) {
+        showToast('Tidak ada nomor tujuan valid (minimal 8 digit)', true);
+        return;
+      }
+
+      const btn = document.getElementById('btn-bc-start');
+      btn.disabled = true;
+      btn.textContent = 'Memulai...';
+
+      try {
+        const res = await fetch('/api/broadcast', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'x-api-key': API_KEY },
+          body: JSON.stringify({
+            targets,
+            message,
+            minDelayMs: minDelaySec * 1000,
+            maxDelayMs: maxDelaySec * 1000
+          })
+        });
+        const data = await res.json();
+        if (data.success) {
+          showToast('Broadcast berhasil dimulai untuk ' + data.totalTargets + ' kontak!');
+          fetchBroadcastStatus();
+          if (!bcPollTimer) {
+            bcPollTimer = setInterval(fetchBroadcastStatus, 2500);
+          }
+        } else {
+          showToast(data.error || 'Gagal memulai broadcast', true);
+        }
+      } catch (err) {
+        showToast('Kesalahan jaringan saat memulai broadcast', true);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Mulai Broadcast';
+      }
+    });
+
+    // Controls: Pause / Resume / Cancel
+    document.getElementById('btn-bc-pause').addEventListener('click', async () => {
+      await fetch('/api/broadcast/pause', { method: 'POST', headers: { 'x-api-key': API_KEY } });
+      fetchBroadcastStatus();
+    });
+    document.getElementById('btn-bc-resume').addEventListener('click', async () => {
+      await fetch('/api/broadcast/resume', { method: 'POST', headers: { 'x-api-key': API_KEY } });
+      fetchBroadcastStatus();
+    });
+    document.getElementById('btn-bc-cancel').addEventListener('click', async () => {
+      if (!confirm('Batalkan pengiriman kampanye broadcast ini?')) return;
+      await fetch('/api/broadcast/cancel', { method: 'POST', headers: { 'x-api-key': API_KEY } });
+      fetchBroadcastStatus();
+    });
+
     // Initial load & Polling
     fetchStatus();
     fetchSessions();
+    fetchBroadcastStatus();
     setInterval(fetchStatus, 4000);
   </script>
 </body>

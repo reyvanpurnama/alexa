@@ -86,6 +86,7 @@ Command prefix is configurable in `.env` (default: `/`). Mobile keyboard autospa
 | `/sessions` | `/profiles` | Automation | Owner | List saved session profiles on server |
 | `/switch` | `/changesession` | Automation | Owner | Hot-swap active session profile |
 | `/reloadkb` | `/refreshkb` | Automation | Owner | Reload business knowledge documents |
+| `/broadcast` | `/bc` | Automation | Owner | Manage & dispatch anti-ban bulk broadcast campaigns |
 
 *Note: Administrative commands are automatically hidden from `/menu` for non-owner contacts.*
 
@@ -167,6 +168,24 @@ Include the `x-api-key` header with your configured `API_KEY` on all requests.
 - `GET /api/knowledge`: Inspect loaded business knowledge base context and stats.
 - `POST /api/knowledge/reload`: Force reload and re-index knowledge documents from disk.
 - `POST /api/alerts/test`: Dispatch an instant test alert to all configured `OWNER_NUMBERS`.
+- `POST /api/broadcast`: Start bulk broadcast with Spintax variation, pacing delay, and batch rest.
+- `GET /api/broadcast/status`: Inspect active broadcast progress, sent/failed metrics, and recent history.
+- `POST /api/broadcast/pause`: Pause active broadcast execution.
+- `POST /api/broadcast/resume`: Resume paused broadcast.
+- `POST /api/broadcast/cancel`: Cancel active broadcast.
+- `POST /api/broadcast/preview`: Test Spintax template variations count and sample outputs.
+
+---
+
+## Anti-Ban Smart Broadcast Engine
+
+Designed to eliminate spam detection and ban risks during bulk marketing campaigns:
+
+- **Recursive Spintax Parser**: Supports deep nested options (`{Halo|{Hai|Selamat pagi}} {kak|bunda|mas}`) to guarantee unique wording for every recipient.
+- **Dynamic Variable Injection**: Automatically interpolates `{{name}}`, `{{phone}}`, `{{time}}`, and `{{date}}`.
+- **Human-Velocity Pacing**: Messages are dispatched sequentially with dynamic random jitter (default 4s – 8s per message).
+- **Batch Rest Intervals**: Pauses execution automatically after every batch limit (default 25s rest every 15 messages) to simulate natural human activity.
+- **Dashboard & Chat Control**: Launch campaigns, preview variations, and monitor live progress directly via Web Dashboard (`/dashboard`) or WhatsApp command (`/bc`).
 
 ---
 
