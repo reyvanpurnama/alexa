@@ -2,12 +2,28 @@
 
 WhatsApp automation engine and notification gateway built with Baileys and Fastify.
 
+---
+
+## Features
+
+- **High-Performance Gateway**: Non-blocking REST API for text, media, OTP, and status delivery.
+- **Provider-Agnostic AI**: Native support for Gemini, OpenAI, Groq, DeepSeek, Ollama, and custom endpoints.
+- **Multi-Turn Memory**: Sliding-window session retention with automatic TTL eviction.
+- **Human Takeover & Auto-Snooze**: Automatically silences AI when an owner replies manually or when a customer requests support.
+- **Autonomous Tool Calling**: Built-in function calling for real-time clock, handover requests, and system diagnostics.
+- **Anti-Ban Queue**: Leaky-bucket outbound message scheduler with jitter protection.
+- **Interactive Documentation**: Built-in OpenAPI specification and Swagger UI.
+
+---
+
 ## Requirements
 
 - Node.js 20+
 - npm or pnpm
 
-## Setup
+---
+
+## Quick Start
 
 1. Install dependencies:
    ```bash
@@ -19,126 +35,166 @@ WhatsApp automation engine and notification gateway built with Baileys and Fasti
    cp .env.example .env
    ```
 
-3. Configure `.env`:
-   - `PORT`: REST API port (default: `3000`)
-   - `API_KEY`: Secret key for API authentication
-   - `BOT_NAME`: Bot identifier (default: `Alexa`)
-   - `PREFIX`: Command prefix (default: `!`)
-   - `OWNER_NUMBERS`: Comma-separated phone numbers for owner access
-   - `USE_PAIRING_CODE`: Set to `true` to use 8-digit pairing code instead of QR
+3. Configure essential keys in `.env`:
+   - `API_KEY`: Secret key for REST API authentication.
+   - `OWNER_NUMBERS`: Comma-separated WhatsApp numbers for administrative access.
+   - `AI_PROVIDER`: Selected provider (`gemini`, `openai`, `groq`, `deepseek`, `ollama`, `custom`).
+   - `AI_API_KEY`: Provider API key.
+   - `AI_MODEL`: Model identifier (e.g. `openai/gpt-oss-120b`, `gpt-4o-mini`, `gemini-1.5-flash`).
 
 4. Start development server:
    ```bash
    npm run dev
    ```
 
+---
+
 ## Project Structure
 
 ```text
 src/
-├── commands/       # Modular command handlers
-├── config/         # Environment and configuration validation
-├── core/           # Baileys socket, message serializer, command manager
-├── handlers/       # Inbound message event dispatcher
-├── queue/          # Outbound message throttler (anti-ban delay)
-├── server/         # Fastify REST API routes
-├── types/          # TypeScript interfaces
-└── utils/          # Logger and JID normalizer
+├── commands/           # Modular commands (general, automation, ai)
+├── config/             # Zod environment schema and validation
+├── core/               # Baileys socket, serializer, and command manager
+├── handlers/           # Inbound message event dispatcher
+├── queue/              # Outbound message throttler (anti-ban delay)
+├── server/             # Fastify REST API and Swagger routes
+├── services/
+│   └── ai/             # Multi-provider engine, memory, takeover, and tools
+├── types/              # TypeScript interfaces
+└── utils/              # Logger, webhook dispatcher, and JID normalizer
 ```
 
-## Adding Commands
+---
 
-Create a TypeScript file inside `src/commands/<category>/<command_name>.ts`:
+## Built-In Commands
 
-```typescript
-import type { Command } from '../../types/command.js';
+Command prefix is configurable in `.env` (default: `/`). Mobile keyboard autospacing (e.g. `/ menu`) is automatically normalized.
 
-const command: Command = {
-  name: 'ping',
-  description: 'Health check command',
-  execute: async ({ m }) => {
-    await m.reply('pong');
-  },
-};
+| Command | Aliases | Category | Scope | Description |
+| :--- | :--- | :--- | :--- | :--- |
+| `/menu` | `/help` | General | Public | List available commands |
+| `/ping` | `/p` | General | Public | Check bot response latency |
+| `/info` | `/about` | General | Public | Display runtime and system metrics |
+| `/human` | `/cs`, `/admin` | General | Public | Request assistance from a human representative |
+| `/ai` | `/ask`, `/tanya` | AI | Public | Query AI assistant with context memory |
+| `/reset` | `/clear`, `/clearchat` | AI | Public | Reset active conversation memory session |
+| `/mute` | `/pause`, `/snooze` | Automation | Owner | Mute AI auto-reply in current chat |
+| `/unmute` | `/resume` | Automation | Owner | Restore autonomous AI auto-reply |
 
-export default command;
-```
+*Note: Administrative commands are automatically hidden from `/menu` for non-owner contacts.*
 
-Commands are automatically registered on startup. Supported options:
-- `aliases`: string[]
-- `category`: 'general' | 'automation' | 'tools' | 'ai' | 'owner'
-- `ownerOnly`: boolean
-- `groupOnly`: boolean
-- `privateOnly`: boolean
+---
+
+## Conversational AI Engine
+
+### Multi-Turn Session Memory
+- **Sliding Window**: Retains the last `AI_MAX_HISTORY` messages (default: 6) per session to maintain context without exceeding token quotas.
+- **Inactivity TTL**: Inactive sessions automatically expire after `AI_SESSION_TIMEOUT_MIN` minutes (default: 15).
+- **Session Scoping**: Conversations are isolated per user in private messages, and per-user-per-group in group chats.
+
+### Human Takeover & Auto-Snooze
+- **Owner Manual Reply**: When an owner replies directly from their phone in a private chat, AI auto-reply is automatically muted for 30 minutes to prevent interruptions.
+- **Customer Handover**: When a customer requests a human agent (via `/human` or natural language prompt), the session is muted for 60 minutes and a `support.requested` webhook is dispatched.
+- **Manual Control**: Owners can silence or resume auto-replies at any time using `/mute [minutes]` and `/unmute`.
+
+### Autonomous Tool Calling
+When using tool-capable models (e.g. Groq, OpenAI), the assistant autonomously executes backend functions:
+- `get_current_time`: Retrieves the real-time clock in Indonesia (WIB, UTC+7).
+- `request_human_handover`: Triggers support handover and pauses AI responses.
+- `get_system_status`: Inspects runtime uptime and environment metrics.
+
+---
 
 ## REST API
 
-Base URL: `http://localhost:3000`
+Base URL: `http://localhost:3000`  
+Interactive Swagger documentation is available at `http://localhost:3000/docs`.
 
-Interactive Swagger documentation is available at `/docs`.
+### Authentication
+Include the `x-api-key` header with your configured `API_KEY` on all requests.
 
-### Endpoints
+### Key Endpoints
 
-- `GET /api/status`: Connection state and message queue stats
-- `POST /api/send-message`: Send text notification
-  - Header: `x-api-key: <API_KEY>`
-  - Body: `{"to": "08123456789", "message": "hello"}`
-- `POST /api/send-media`: Send media attachment (document, image, video, audio)
-  - Header: `x-api-key: <API_KEY>`
-  - Body: `{"to": "08123456789", "type": "document", "url": "https://example.com/invoice.pdf"}`
-- `POST /api/check-number`: Verify if phone number is registered on WhatsApp
-  - Header: `x-api-key: <API_KEY>`
-  - Body: `{"phoneNumber": "08123456789"}`
-  - Response: `{"success": true, "registered": true, "jid": "628123456789@s.whatsapp.net"}`
-- `POST /api/pairing`: Request 8-digit pairing code
-  - Header: `x-api-key: <API_KEY>`
-  - Body: `{"phoneNumber": "628123456789"}`
+- `GET /api/status`: Connection state and message queue statistics.
+- `POST /api/send-message`: Dispatch an outbound text message.
+  ```json
+  {
+    "to": "628123456789",
+    "message": "Your verification code is 492019."
+  }
+  ```
+- `POST /api/send-media`: Send media attachments (image, document, video, audio).
+  ```json
+  {
+    "to": "628123456789",
+    "type": "document",
+    "url": "https://example.com/invoice.pdf",
+    "caption": "Your monthly statement."
+  }
+  ```
+- `POST /api/check-number`: Verify WhatsApp registration status of a phone number.
+  ```json
+  {
+    "phoneNumber": "628123456789"
+  }
+  ```
+- `POST /api/pairing`: Request an 8-digit WhatsApp pairing code.
+  ```json
+  {
+    "phoneNumber": "628123456789"
+  }
+  ```
+
+---
 
 ## Webhooks
 
-Set `WEBHOOK_URL` in `.env` to receive real-time inbound WhatsApp events:
+Set `WEBHOOK_URL` in `.env` to receive real-time HTTP POST notifications.
 
+### Message Received (`message.received`)
 ```json
 {
   "event": "message.received",
   "timestamp": 1727318000,
   "data": {
-    "messageId": "3EB0...",
+    "messageId": "3EB0B123456789",
     "from": "628123456789@s.whatsapp.net",
     "isGroup": false,
     "senderNumber": "628123456789",
     "senderName": "Budi",
     "body": "Hello world",
-    "type": "text"
+    "type": "text",
+    "hasPrefix": false,
+    "command": null
   }
 }
 ```
 
-Optional `WEBHOOK_SECRET` will be passed in the `x-webhook-secret` header for signature verification.
+### Support Requested (`support.requested`)
+```json
+{
+  "event": "support.requested",
+  "timestamp": 1727318050,
+  "data": {
+    "senderNumber": "628123456789",
+    "reason": "Customer requested human assistance"
+  }
+}
+```
 
-## AI Engine
+Optional `WEBHOOK_SECRET` will be transmitted via the `x-webhook-secret` header for request verification.
 
-Alexa features a provider-agnostic AI subsystem supporting:
-- **Google Gemini** (`gemini`)
-- **OpenAI** (`openai`)
-- **Groq** (`groq`)
-- **DeepSeek** (`deepseek`)
-- **Local Ollama** (`ollama`)
-- **Custom OpenAI-compatible endpoints** (`custom`)
+---
 
-Configuration in `.env`:
-- `AI_PROVIDER`: Selected provider name (default: `gemini`)
-- `AI_API_KEY`: Provider API key
-- `AI_MODEL`: Model identifier (e.g. `gemini-1.5-flash`, `gpt-4o-mini`, `llama-3.3-70b-versatile`)
-- `AI_SYSTEM_PROMPT`: Persona and business context
-- `AI_AUTO_REPLY`: Set `true` to automatically reply to non-command direct messages
-
-Usage:
-- On-demand: `!ai <question>` (or aliases: `!ask`, `!tanya`)
-- Autonomous: Automatic customer support when `AI_AUTO_REPLY=true`
-
-## Docker
+## Docker Deployment
 
 ```bash
 docker compose up -d
 ```
+
+---
+
+## License
+
+MIT
