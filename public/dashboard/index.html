@@ -224,28 +224,109 @@
     <!-- TAB 4: ASISTEN AI & BASIS PENGETAHUAN -->
     <div id="tab-ai" class="tab-view">
       <div class="bento-grid">
-        <div class="bento-card col-6">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-            <div class="card-title" style="margin-bottom: 0;">Basis Pengetahuan (knowledge/)</div>
-            <button class="btn btn-secondary btn-sm" id="btn-refresh-kb">Muat Ulang</button>
+        <!-- Col-7: Knowledge Hub (Dual-Mode Editor) -->
+        <div class="bento-card col-7">
+          <div>
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; gap: 8px;">
+              <div>
+                <div class="card-title" style="margin-bottom: 4px;">Basis Pengetahuan (Knowledge Hub)</div>
+                <div style="font-size: 12px; color: var(--text-secondary); line-height: 1.4;">
+                  Kelola dokumen profil dan tanya-jawab resmi bot secara mandiri tanpa menyentuh koding.
+                </div>
+              </div>
+              <span class="ai-stat-chip" id="kb-char-count">-- karakter terindeks</span>
+            </div>
+
+            <!-- Sub-Segmented Control (Dual Mode Switcher) -->
+            <div class="sub-seg-control" role="tablist">
+              <button class="sub-seg-btn active" id="sub-seg-doc" data-subtab="view-kb-doc" role="tab">Dokumen Profil (Markdown)</button>
+              <button class="sub-seg-btn" id="sub-seg-faq" data-subtab="view-kb-faq" role="tab">Kartu FAQ Resmi (<span id="faq-count-badge">0</span>)</button>
+            </div>
+
+            <!-- VIEW 1: DOKUMEN PROFIL (MARKDOWN) -->
+            <div id="view-kb-doc" class="sub-tab-view active">
+              <div class="form-group" style="margin-bottom: 12px;">
+                <textarea id="kb-business-doc" class="form-textarea" rows="13" style="font-family: var(--font-mono); font-size: 12px; line-height: 1.6; resize: vertical;" placeholder="Tuliskan profil toko, jam buka, nomor rekening, alamat, dan kebijakan garansi di sini..."></textarea>
+              </div>
+
+              <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border-subtle); padding-top: 12px;">
+                <div style="font-size: 11px; color: var(--text-tertiary); font-family: var(--font-mono);">
+                  File: <code>knowledge/business.md</code> • Sinkronisasi otomatis
+                </div>
+                <div style="display: flex; gap: 8px;">
+                  <button class="btn btn-secondary btn-sm" id="btn-refresh-kb">Muat Ulang</button>
+                  <button class="btn btn-primary btn-sm" id="btn-save-kb-doc">Simpan & Terapkan</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- VIEW 2: FAQ BUILDER (STRUCTURED CARDS) -->
+            <div id="view-kb-faq" class="sub-tab-view">
+              <!-- Inline Form Tambah FAQ Baru -->
+              <div class="faq-new-box">
+                <div style="font-size: 12px; font-weight: 600; color: var(--text-primary); margin-bottom: 10px;">
+                  + Tambah Tanya-Jawab Baru (FAQ)
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 8px; margin-bottom: 8px;">
+                  <input type="text" id="new-faq-topic" class="form-input" placeholder="Kategori (misal: Pembayaran)" style="font-size: 12px;" />
+                  <input type="text" id="new-faq-q" class="form-input" placeholder="Pertanyaan pelanggan (misal: Ada garansi?)" style="font-size: 12px;" />
+                </div>
+                <div style="margin-bottom: 8px;">
+                  <textarea id="new-faq-a" class="form-textarea" rows="2" placeholder="Jawaban resmi bot untuk pertanyaan ini..." style="font-size: 12px;"></textarea>
+                </div>
+                <div style="display: flex; justify-content: flex-end;">
+                  <button class="btn btn-primary btn-sm" id="btn-add-faq">+ Tambahkan FAQ</button>
+                </div>
+              </div>
+
+              <!-- List Kartu FAQ -->
+              <div id="faq-items-list" class="faq-list">
+                <div style="text-align: center; color: var(--text-tertiary); font-size: 12px; padding: 20px;">
+                  Memuat daftar FAQ...
+                </div>
+              </div>
+            </div>
           </div>
-          <div class="form-group">
-            <textarea id="kb-preview-text" class="form-textarea" rows="10" readonly placeholder="Memuat dokumen knowledge base..."></textarea>
-          </div>
-          <div style="font-size: 11px; color: var(--text-tertiary); font-family: var(--font-mono);" id="kb-char-count">-- karakter terindeks</div>
         </div>
 
-        <div class="bento-card col-6">
-          <div class="card-title">Uji Pertanyaan ke Asisten AI</div>
-          <div class="form-group">
-            <input type="text" id="ai-test-prompt" class="form-input" placeholder="Contoh: Berapa nomor rekening resmi toko?" />
-          </div>
-          <button class="btn btn-primary" id="btn-test-ai" style="width: 100%; margin-bottom: 12px;">Tanyakan</button>
+        <!-- Col-5: Live Inspector Simulator (Verifikasi Respons) -->
+        <div class="bento-card col-5">
+          <div>
+            <div class="card-title" style="margin-bottom: 4px;">Simulator Verifikasi AI</div>
+            <p style="font-size: 12px; color: var(--text-secondary); margin-bottom: 12px; line-height: 1.4;">
+              Verifikasi akurasi respons bot dengan basis pengetahuan terkini secara instan sebelum menjawab pesan riil pelanggan.
+            </p>
 
-          <div id="ai-response-box" style="background: var(--bg-surface-elevated); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 12px; min-height: 120px; font-size: 13px; color: var(--text-secondary); line-height: 1.6; white-space: pre-wrap;">Ketik pertanyaan dan tanyakan langsung ke asisten bot untuk memverifikasi data jawaban.</div>
+            <div class="form-group" style="margin-bottom: 8px;">
+              <label class="form-label" for="ai-test-prompt">Pertanyaan Uji Coba</label>
+              <input type="text" id="ai-test-prompt" class="form-input" placeholder="Ketik pertanyaan untuk menguji data bot..." />
+            </div>
+
+            <!-- Quick Chip Prompts -->
+            <div class="ai-chips-container" style="margin-bottom: 14px;">
+              <span class="ai-chip" data-prompt="Berapa nomor rekening resmi pembayaran toko?">💳 No Rekening</span>
+              <span class="ai-chip" data-prompt="Jam berapa toko buka dan beroperasi?">🕒 Jam Operasional</span>
+              <span class="ai-chip" data-prompt="Bagaimana kebijakan garansi dan pengembalian barang?">🛡️ Garansi</span>
+              <span class="ai-chip" data-prompt="Berapa ongkos kirim dan jasa kurir yang tersedia?">📦 Pengiriman</span>
+            </div>
+
+            <button class="btn btn-primary" id="btn-test-ai" style="width: 100%; margin-bottom: 14px;">
+              Tanyakan ke Asisten
+            </button>
+
+            <!-- Respons Container -->
+            <div>
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                <label class="form-label" style="margin-bottom: 0;">Respons Asisten (Live)</label>
+                <span id="ai-latency-tag" class="ai-latency-pill" style="display: none;">⚡ Ready</span>
+              </div>
+              <div id="ai-response-box" style="background: var(--bg-surface-elevated); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 14px; min-height: 140px; font-size: 13px; color: var(--text-secondary); line-height: 1.6; white-space: pre-wrap;">Ketik pertanyaan atau klik salah satu topik di atas untuk memverifikasi data respons bot.</div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
+
 
     <!-- TAB 5: PENGATURAN & HAK AKSES (SETTINGS) -->
     <div id="tab-settings" class="tab-view">

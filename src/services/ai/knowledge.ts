@@ -10,6 +10,8 @@ export interface FAQItem {
 
 export class KnowledgeManager {
   private knowledgeDir = path.join(process.cwd(), 'knowledge');
+  private businessDocPath = path.join(process.cwd(), 'knowledge', 'business.md');
+  private faqPath = path.join(process.cwd(), 'knowledge', 'faq.json');
   private cachedContext: string = '';
   private lastLoadedAt: number = 0;
 
@@ -17,21 +19,23 @@ export class KnowledgeManager {
     this.reload();
   }
 
+  private ensureDir(): void {
+    if (!fs.existsSync(this.knowledgeDir)) {
+      fs.mkdirSync(this.knowledgeDir, { recursive: true });
+    }
+  }
+
   /**
    * Reloads and re-indexes all knowledge documents from the knowledge/ directory
    */
   reload(): void {
-    if (!fs.existsSync(this.knowledgeDir)) {
-      fs.mkdirSync(this.knowledgeDir, { recursive: true });
-    }
-
+    this.ensureDir();
     const sections: string[] = [];
 
-    // 1. Read business.md (or any .md / .txt documents)
-    const businessDocPath = path.join(this.knowledgeDir, 'business.md');
-    if (fs.existsSync(businessDocPath)) {
+    // 1. Read business.md
+    if (fs.existsSync(this.businessDocPath)) {
       try {
-        const content = fs.readFileSync(businessDocPath, 'utf-8').trim();
+        const content = fs.readFileSync(this.businessDocPath, 'utf-8').trim();
         if (content) {
           sections.push(`=== Business Profile, Services & Policies ===\n${content}`);
         }
@@ -41,10 +45,9 @@ export class KnowledgeManager {
     }
 
     // 2. Read faq.json
-    const faqPath = path.join(this.knowledgeDir, 'faq.json');
-    if (fs.existsSync(faqPath)) {
+    if (fs.existsSync(this.faqPath)) {
       try {
-        const rawJson = fs.readFileSync(faqPath, 'utf-8');
+        const rawJson = fs.readFileSync(this.faqPath, 'utf-8');
         const items: FAQItem[] = JSON.parse(rawJson);
 
         if (Array.isArray(items) && items.length > 0) {
@@ -70,6 +73,101 @@ export class KnowledgeManager {
   }
 
   /**
+   * Reads raw business.md text
+   */
+  getBusinessDoc(): string {
+    this.ensureDir();
+    if (fs.existsSync(this.businessDocPath)) {
+      try {
+        return fs.readFileSync(this.businessDocPath, 'utf-8');
+      } catch (err) {
+        logger.error({ err }, 'Failed to read business.md');
+      }
+    }
+    return '';
+  }
+
+  /**
+   * Writes and hot-reloads business.md
+   */
+  saveBusinessDoc(content: string): void {
+    this.ensureDir();
+    fs.writeFileSync(this.businessDocPath, content.trim() + '\n', 'utf-8');
+    logger.info('[Knowledge] Updated and re-indexed business.md');
+    this.reload();
+  }
+
+  /**
+   * Reads structured FAQ items
+   */
+  getFaqItems(): FAQItem[] {
+    this.ensureDir();
+    if (fs.existsSync(this.faqPath)) {
+      try {
+        const raw = fs.readFileSync(this.faqPath, 'utf-8');
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) return parsed;
+      } catch (err) {
+        logger.error({ err }, 'Failed to parse faq.json');
+      }
+    }
+    return [];
+  }
+
+  private saveFaqItems(items: FAQItem[]): void {
+    this.ensureDir();
+    fs.writeFileSync(this.faqPath, JSON.stringify(items, null, 2), 'utf-8');
+    this.reload();
+  }
+
+  /**
+   * Adds an FAQ item
+   */
+  addFaqItem(item: FAQItem): FAQItem[] {
+    const items = this.getFaqItems();
+    items.push({
+      topic: item.topic?.trim() || undefined,
+      question: item.question.trim(),
+      answer: item.answer.trim(),
+    });
+    this.saveFaqItems(items);
+    logger.info(`[Knowledge] Added new FAQ item: "${item.question}"`);
+    return items;
+  }
+
+  /**
+   * Updates an FAQ item by index
+   */
+  updateFaqItem(index: number, item: FAQItem): FAQItem[] {
+    const items = this.getFaqItems();
+    if (index < 0 || index >= items.length) {
+      throw new Error(`Invalid FAQ index: ${index}`);
+    }
+    items[index] = {
+      topic: item.topic?.trim() || undefined,
+      question: item.question.trim(),
+      answer: item.answer.trim(),
+    };
+    this.saveFaqItems(items);
+    logger.info(`[Knowledge] Updated FAQ item at index ${index}`);
+    return items;
+  }
+
+  /**
+   * Deletes an FAQ item by index
+   */
+  deleteFaqItem(index: number): FAQItem[] {
+    const items = this.getFaqItems();
+    if (index < 0 || index >= items.length) {
+      throw new Error(`Invalid FAQ index: ${index}`);
+    }
+    const removed = items.splice(index, 1);
+    this.saveFaqItems(items);
+    logger.info(`[Knowledge] Deleted FAQ item: "${removed[0]?.question}"`);
+    return items;
+  }
+
+  /**
    * Returns formatted knowledge context for system prompt injection
    */
   getKnowledgeContext(): string {
@@ -79,11 +177,12 @@ export class KnowledgeManager {
   /**
    * Returns inspection metadata for API and debugging
    */
-  getStats(): { hasKnowledge: boolean; length: number; lastLoadedAt: number } {
+  getStats(): { hasKnowledge: boolean; length: number; lastLoadedAt: number; faqCount: number } {
     return {
       hasKnowledge: this.cachedContext.length > 0,
       length: this.cachedContext.length,
       lastLoadedAt: this.lastLoadedAt,
+      faqCount: this.getFaqItems().length,
     };
   }
 }

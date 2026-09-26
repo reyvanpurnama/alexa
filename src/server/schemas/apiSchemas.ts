@@ -71,3 +71,13 @@ export const updateSettingsSchema = z.object({
 export const addOwnerSchema = z.object({
   phoneNumber: z.string().min(8, 'Nomor telepon minimal 8 digit'),
 });
+
+export const saveBusinessDocSchema = z.object({
+  content: z.string(),
+});
+
+export const faqItemSchema = z.object({
+  question: z.string().min(3, 'Pertanyaan minimal 3 karakter'),
+  answer: z.string().min(1, 'Jawaban tidak boleh kosong'),
+  topic: z.string().optional(),
+});
