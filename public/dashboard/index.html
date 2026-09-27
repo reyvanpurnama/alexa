@@ -364,38 +364,111 @@
           </div>
         </div>
 
-        <!-- Col-5: Live Inspector Simulator (Verifikasi Respons) -->
-        <div class="bento-card col-5">
-          <div>
-            <div class="card-title" style="margin-bottom: 4px;">Simulator Verifikasi AI</div>
-            <p style="font-size: 12px; color: var(--text-secondary); margin-bottom: 14px; line-height: 1.4;">
-              Verifikasi akurasi respons bot dengan basis pengetahuan terkini secara instan sebelum menjawab pesan riil pelanggan.
-            </p>
-
-            <div class="form-group" style="margin-bottom: 8px;">
-              <label class="form-label" for="ai-test-prompt">Pertanyaan Uji Coba</label>
-              <input type="text" id="ai-test-prompt" class="form-input" placeholder="Ketik pertanyaan untuk menguji data bot..." />
-            </div>
-
-            <!-- Quick Chip Prompts -->
-            <div class="ai-chips-container" style="margin-bottom: 14px;">
-              <span class="ai-chip" data-prompt="Berapa nomor rekening resmi pembayaran toko?">💳 No Rekening</span>
-              <span class="ai-chip" data-prompt="Jam berapa toko buka dan beroperasi?">🕒 Jam Operasional</span>
-              <span class="ai-chip" data-prompt="Bagaimana kebijakan garansi dan pengembalian barang?">🛡️ Garansi</span>
-              <span class="ai-chip" data-prompt="Berapa ongkos kirim dan jasa kurir yang tersedia?">📦 Pengiriman</span>
-            </div>
-
-            <button class="btn btn-primary" id="btn-test-ai" style="width: 100%; margin-bottom: 14px;">
-              Tanyakan ke Asisten
-            </button>
-
-            <!-- Respons Container -->
+        <!-- Col-5 Right Column: Model & Credentials + Simulator -->
+        <div class="col-5" style="display: flex; flex-direction: column; gap: 16px;">
+          <!-- Card 1: Konfigurasi Model & Kredensial AI -->
+          <div class="bento-card" id="card-ai-credentials">
             <div>
-              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                <label class="form-label" style="margin-bottom: 0;">Respons Asisten (Live)</label>
-                <span id="ai-latency-tag" class="ai-latency-pill" style="display: none;">⚡ Ready</span>
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                <div class="card-title" style="margin-bottom: 0;">Model & Kredensial AI</div>
+                <span id="ai-key-status-badge" class="ai-stat-chip">Memeriksa...</span>
               </div>
-              <div id="ai-response-box" class="ai-response-card">Ketik pertanyaan atau klik salah satu topik di atas untuk memverifikasi data respons bot.</div>
+              <p style="font-size: 12px; color: var(--text-secondary); margin-bottom: 12px; line-height: 1.4;">
+                Ganti provider, model bahasa, atau API Key secara instan tanpa restart bot.
+              </p>
+
+              <!-- Provider Selection -->
+              <div class="form-group" style="margin-bottom: 10px;">
+                <label class="form-label" for="select-ai-provider">Penyedia AI (Provider)</label>
+                <select id="select-ai-provider" class="form-input" style="font-size: 12.5px;">
+                  <option value="groq">Groq (Ultra Cepat & Ringkas)</option>
+                  <option value="gemini">Google Gemini</option>
+                  <option value="openai">OpenAI (ChatGPT)</option>
+                  <option value="deepseek">DeepSeek AI</option>
+                  <option value="ollama">Ollama (Server Lokal / Mandiri)</option>
+                  <option value="custom">Custom Endpoint (OpenAI Compatible)</option>
+                </select>
+              </div>
+
+              <!-- Model Selection -->
+              <div class="form-group" style="margin-bottom: 10px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;">
+                  <label class="form-label" for="select-ai-model" style="margin-bottom: 0;">Model Bahasa</label>
+                  <button type="button" id="btn-toggle-custom-model" style="background: none; border: none; font-size: 11px; color: var(--accent-blue); cursor: pointer; padding: 0;">Ketik Manual</button>
+                </div>
+                <select id="select-ai-model" class="form-input" style="font-size: 12.5px;"></select>
+                <input type="text" id="input-custom-model" class="form-input" placeholder="contoh: llama-3.3-70b-versatile" style="display: none; margin-top: 6px; font-size: 12px; font-family: var(--font-mono);" />
+              </div>
+
+              <!-- Base URL (Conditional for Custom / Ollama) -->
+              <div class="form-group" id="group-ai-base-url" style="display: none; margin-bottom: 10px;">
+                <label class="form-label" for="input-ai-base-url">Base URL Endpoint</label>
+                <input type="text" id="input-ai-base-url" class="form-input" placeholder="https://api.groq.com/openai/v1" style="font-size: 12px; font-family: var(--font-mono);" />
+              </div>
+
+              <!-- API Key Input with Reveal & Masked display -->
+              <div class="form-group" style="margin-bottom: 12px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;">
+                  <label class="form-label" for="input-ai-api-key" style="margin-bottom: 0;">Kunci API (API Key)</label>
+                  <span id="ai-key-masked-display" style="font-size: 10.5px; color: var(--text-tertiary); font-family: var(--font-mono);"></span>
+                </div>
+                <div style="display: flex; gap: 6px; align-items: center;">
+                  <input type="password" id="input-ai-api-key" class="form-input" placeholder="Isi untuk mengganti API Key..." style="flex: 1; font-family: var(--font-mono); font-size: 12px;" />
+                  <button type="button" class="btn btn-secondary btn-sm" id="btn-toggle-ai-key-mask" title="Tampilkan / Sembunyikan" style="padding: 0 10px; height: 38px;">
+                    👁️
+                  </button>
+                </div>
+                <div style="font-size: 10.5px; color: var(--text-tertiary); margin-top: 4px;">
+                  Kunci saat ini tersimpan aman. Biarkan kosong jika hanya ingin ganti model.
+                </div>
+              </div>
+
+              <!-- Action Buttons: Pre-flight Test & Save -->
+              <div style="display: flex; gap: 8px; justify-content: flex-end; align-items: center; border-top: 1px solid var(--border-subtle); padding-top: 10px;">
+                <span id="ai-test-connection-status" style="font-size: 11px; margin-right: auto; display: none;"></span>
+                <button type="button" class="btn btn-secondary btn-sm" id="btn-test-ai-credentials">
+                  Uji Koneksi ⚡
+                </button>
+                <button type="button" class="btn btn-primary btn-sm" id="btn-save-ai-credentials">
+                  Simpan & Terapkan
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Card 2: Live Inspector Simulator (Verifikasi Respons) -->
+          <div class="bento-card">
+            <div>
+              <div class="card-title" style="margin-bottom: 4px;">Simulator Verifikasi AI</div>
+              <p style="font-size: 12px; color: var(--text-secondary); margin-bottom: 12px; line-height: 1.4;">
+                Verifikasi akurasi respons bot dengan basis pengetahuan terkini secara instan sebelum menjawab pesan riil pelanggan.
+              </p>
+
+              <div class="form-group" style="margin-bottom: 8px;">
+                <label class="form-label" for="ai-test-prompt">Pertanyaan Uji Coba</label>
+                <input type="text" id="ai-test-prompt" class="form-input" placeholder="Ketik pertanyaan untuk menguji data bot..." />
+              </div>
+
+              <!-- Quick Chip Prompts -->
+              <div class="ai-chips-container" style="margin-bottom: 12px;">
+                <span class="ai-chip" data-prompt="Berapa nomor rekening resmi pembayaran toko?">💳 Rekening</span>
+                <span class="ai-chip" data-prompt="Jam berapa toko buka dan beroperasi?">🕒 Jam Operasional</span>
+                <span class="ai-chip" data-prompt="Bagaimana kebijakan garansi dan pengembalian barang?">🛡️ Garansi</span>
+                <span class="ai-chip" data-prompt="Berapa ongkos kirim dan jasa kurir yang tersedia?">📦 Pengiriman</span>
+              </div>
+
+              <button class="btn btn-primary" id="btn-test-ai" style="width: 100%; margin-bottom: 12px;">
+                Tanyakan ke Asisten
+              </button>
+
+              <!-- Respons Container -->
+              <div>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                  <label class="form-label" style="margin-bottom: 0;">Respons Asisten (Live)</label>
+                  <span id="ai-latency-tag" class="ai-latency-pill" style="display: none;">⚡ Ready</span>
+                </div>
+                <div id="ai-response-box" class="ai-response-card">Ketik pertanyaan atau klik salah satu topik di atas untuk memverifikasi data respons bot.</div>
+              </div>
             </div>
           </div>
         </div>

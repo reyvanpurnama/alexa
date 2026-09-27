@@ -25,11 +25,75 @@ export interface AIResponseResult {
 
 class AIService {
   /**
+   * Returns active AI runtime configuration with fallback to environment
+   */
+  getActiveConfig() {
+    const s = settingsManager.getSettings();
+    const provider = s.aiProvider || config.AI_PROVIDER;
+    const apiKey = s.aiApiKey !== undefined && s.aiApiKey !== '' ? s.aiApiKey : config.AI_API_KEY;
+    const model = s.aiModel !== undefined && s.aiModel !== '' ? s.aiModel : config.AI_MODEL;
+    const baseUrl = s.aiBaseUrl !== undefined && s.aiBaseUrl !== '' ? s.aiBaseUrl : config.AI_BASE_URL;
+
+    return { provider, apiKey, model, baseUrl };
+  }
+
+  /**
+   * Pre-flight credential verification (Apple HIG Instant Verification)
+   */
+  async testConnection(testConfig?: {
+    provider?: string;
+    apiKey?: string;
+    model?: string;
+    baseUrl?: string;
+  }): Promise<{ success: boolean; latencyMs: number; reply?: string; error?: string }> {
+    const active = this.getActiveConfig();
+    const provider = (testConfig?.provider || active.provider) as any;
+    const apiKey =
+      testConfig?.apiKey && !testConfig.apiKey.includes('•••')
+        ? testConfig.apiKey.trim()
+        : active.apiKey;
+    const model = testConfig?.model?.trim() || active.model;
+    const baseUrl = testConfig?.baseUrl?.trim() || active.baseUrl;
+
+    const startTime = Date.now();
+    try {
+      const testPrompt = 'Halo! Mohon balas satu kata saja untuk verifikasi koneksi: "Online".';
+      let replyText = '';
+
+      if (provider === 'gemini') {
+        replyText = await this.generateGemini(testPrompt, '', [], apiKey, model);
+      } else {
+        const res = await this.generateOpenAICompatible(testPrompt, '', provider, [], undefined, {
+          apiKey,
+          model,
+          baseUrl,
+        });
+        replyText = res.text;
+      }
+
+      const latencyMs = Date.now() - startTime;
+      return {
+        success: true,
+        latencyMs,
+        reply: replyText.trim(),
+      };
+    } catch (err: any) {
+      const latencyMs = Date.now() - startTime;
+      return {
+        success: false,
+        latencyMs,
+        error: err?.message || 'Gagal terhubung ke penyedia AI',
+      };
+    }
+  }
+
+  /**
    * Generates text response using the configured AI provider,
    * grounded with business knowledge base, dynamic SQLite schema, multi-turn memory, and autonomous tool calling.
    */
   async generateResponse(prompt: string, options?: AIOptions): Promise<AIResponseResult> {
-    const provider = config.AI_PROVIDER;
+    const aiConfig = this.getActiveConfig();
+    const provider = aiConfig.provider;
     const baseSystemPrompt = options?.systemPrompt || config.AI_SYSTEM_PROMPT;
     const isOwner = Boolean(
       options?.sessionId && config.OWNER_NUMBERS.includes(options.sessionId)
@@ -108,14 +172,17 @@ This user is an AUTHENTICATED OWNER/ADMIN of the system (+${options?.sessionId})
   private async generateGemini(
     prompt: string,
     systemPrompt: string,
-    history: ChatMessage[]
+    history: ChatMessage[],
+    overrideApiKey?: string,
+    overrideModel?: string
   ): Promise<string> {
-    const apiKey = config.AI_API_KEY;
+    const aiConfig = this.getActiveConfig();
+    const apiKey = overrideApiKey || aiConfig.apiKey;
     if (!apiKey) {
-      throw new Error('AI_API_KEY is not set in .env for Gemini provider.');
+      throw new Error('AI_API_KEY belum dikonfigurasi untuk penyedia Gemini.');
     }
 
-    const modelName = config.AI_MODEL || 'gemini-1.5-flash';
+    const modelName = overrideModel || aiConfig.model || 'gemini-1.5-flash';
     const genAI = new GoogleGenerativeAI(apiKey);
 
     const model = genAI.getGenerativeModel({
@@ -151,16 +218,18 @@ This user is an AUTHENTICATED OWNER/ADMIN of the system (+${options?.sessionId})
     systemPrompt: string,
     provider: 'openai' | 'groq' | 'deepseek' | 'ollama' | 'custom',
     history: ChatMessage[],
-    sessionId?: string
+    sessionId?: string,
+    override?: { apiKey?: string; model?: string; baseUrl?: string }
   ): Promise<{ text: string; usedTools: boolean }> {
-    let baseURL: string | undefined = config.AI_BASE_URL || undefined;
-    let apiKey: string = config.AI_API_KEY;
+    const aiConfig = this.getActiveConfig();
+    let baseURL: string | undefined = override?.baseUrl || aiConfig.baseUrl || undefined;
+    let apiKey: string = override?.apiKey !== undefined ? override.apiKey : aiConfig.apiKey;
     let defaultModel = 'gpt-4o-mini';
 
     switch (provider) {
       case 'groq':
         baseURL = baseURL || 'https://api.groq.com/openai/v1';
-        defaultModel = 'openai/gpt-oss-20b';
+        defaultModel = 'llama-3.3-70b-versatile';
         break;
       case 'deepseek':
         baseURL = baseURL || 'https://api.deepseek.com';
@@ -173,7 +242,7 @@ This user is an AUTHENTICATED OWNER/ADMIN of the system (+${options?.sessionId})
         break;
       case 'custom':
         if (!baseURL) {
-          throw new Error('AI_BASE_URL is required when AI_PROVIDER is set to custom.');
+          throw new Error('AI_BASE_URL wajib diisi jika AI_PROVIDER diset ke custom.');
         }
         defaultModel = 'default';
         break;
@@ -185,7 +254,7 @@ This user is an AUTHENTICATED OWNER/ADMIN of the system (+${options?.sessionId})
     }
 
     if (!apiKey && provider !== 'ollama') {
-      throw new Error(`AI_API_KEY is not set in .env for ${provider} provider.`);
+      throw new Error(`AI_API_KEY belum dikonfigurasi untuk penyedia ${provider}.`);
     }
 
     const client = new OpenAI({
@@ -193,7 +262,7 @@ This user is an AUTHENTICATED OWNER/ADMIN of the system (+${options?.sessionId})
       baseURL,
     });
 
-    const model = config.AI_MODEL || defaultModel;
+    const model = override?.model || aiConfig.model || defaultModel;
 
     const messages: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = [];
     if (systemPrompt) {

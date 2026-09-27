@@ -179,6 +179,19 @@ export async function fetchOverviewStatus() {
         queueBanner.style.display = 'none';
       }
     }
+
+    // Dynamic AI Model & Provider update in Overview
+    const providerEl = document.getElementById('overview-provider');
+    const modelEl = document.getElementById('overview-model');
+    if (providerEl || modelEl) {
+      try {
+        const aiData = await fetchApi('/api/settings/ai');
+        if (aiData && aiData.success && aiData.ai) {
+          if (providerEl) providerEl.textContent = (aiData.ai.provider || 'AI ENGINE').toUpperCase();
+          if (modelEl) modelEl.textContent = `${aiData.ai.model || 'default'} · Knowledge base siap`;
+        }
+      } catch {}
+    }
   } catch (err) {}
 }
 

@@ -1,5 +1,6 @@
 import type { FastifyPluginAsync } from 'fastify';
 import { settingsManager } from '../../../config/settingsManager.js';
+import { aiService } from '../../../services/ai/index.js';
 import { updateSettingsSchema, addOwnerSchema } from '../../schemas/apiSchemas.js';
 
 export const settingsRoutes: FastifyPluginAsync = async (fastify) => {
@@ -9,6 +10,63 @@ export const settingsRoutes: FastifyPluginAsync = async (fastify) => {
       success: true,
       settings: settingsManager.getSettings(),
     });
+  });
+
+  // GET /api/settings/ai - Inspect current active AI model and masked credentials
+  fastify.get('/api/settings/ai', async (_request, reply) => {
+    return reply.send({
+      success: true,
+      ai: settingsManager.getAISettings(),
+    });
+  });
+
+  // PUT /api/settings/ai - Update dynamic AI credentials, model, or provider
+  fastify.put('/api/settings/ai', async (request, reply) => {
+    const body =
+      (request.body as {
+        provider?: any;
+        apiKey?: string;
+        model?: string;
+        baseUrl?: string;
+      }) || {};
+
+    if (
+      body.provider &&
+      !['gemini', 'openai', 'groq', 'deepseek', 'ollama', 'custom'].includes(body.provider)
+    ) {
+      return reply.code(400).send({
+        success: false,
+        error: 'Penyedia AI tidak didukung. Pilih: gemini, openai, groq, deepseek, ollama, atau custom.',
+      });
+    }
+
+    try {
+      settingsManager.updateAISettings(body);
+      return reply.send({
+        success: true,
+        message: 'Konfigurasi model & kredensial AI berhasil diperbarui dan aktif seketika.',
+        ai: settingsManager.getAISettings(),
+      });
+    } catch (err: unknown) {
+      return reply.code(500).send({
+        success: false,
+        error: (err as Error).message || 'Gagal memperbarui konfigurasi AI',
+      });
+    }
+  });
+
+  // POST /api/settings/ai/test - Pre-flight test connection (Apple HIG verification)
+  fastify.post('/api/settings/ai/test', async (request, reply) => {
+    const body =
+      (request.body as {
+        provider?: string;
+        apiKey?: string;
+        model?: string;
+        baseUrl?: string;
+      }) || {};
+
+    const testResult = await aiService.testConnection(body);
+    return reply.send(testResult);
   });
 
   // PUT /api/settings - Update general dynamic settings (botName, prefix, footerText, aiAutoReply, messageDelayMs)

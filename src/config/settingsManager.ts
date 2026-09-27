@@ -4,6 +4,8 @@ import { config } from './index.js';
 import { logger } from '../utils/logger.js';
 import { messageQueue } from '../queue/messageQueue.js';
 
+export type AIProvider = 'gemini' | 'openai' | 'groq' | 'deepseek' | 'ollama' | 'custom';
+
 export interface DynamicSettings {
   botName: string;
   prefix: string;
@@ -11,6 +13,10 @@ export interface DynamicSettings {
   ownerNumbers: string[];
   aiAutoReply: boolean;
   messageDelayMs: number;
+  aiProvider: AIProvider;
+  aiApiKey?: string;
+  aiModel?: string;
+  aiBaseUrl?: string;
 }
 
 export class SettingsManager {
@@ -37,6 +43,10 @@ export class SettingsManager {
       ownerNumbers: [...config.OWNER_NUMBERS],
       aiAutoReply: config.AI_AUTO_REPLY,
       messageDelayMs: config.MESSAGE_DELAY_MS,
+      aiProvider: config.AI_PROVIDER,
+      aiApiKey: config.AI_API_KEY,
+      aiModel: config.AI_MODEL,
+      aiBaseUrl: config.AI_BASE_URL,
     };
 
     if (fs.existsSync(this.filePath)) {
@@ -132,6 +142,70 @@ export class SettingsManager {
   isOwner(phoneOrJid: string): boolean {
     const clean = phoneOrJid.split('@')[0].split(':')[0].replace(/\D/g, '');
     return this.settings.ownerNumbers.includes(clean);
+  }
+
+  /**
+   * Masks sensitive API keys for safe UI presentation (e.g. gsk_••••••••amrZ)
+   */
+  maskApiKey(key?: string): string {
+    if (!key || !key.trim()) return '';
+    const clean = key.trim();
+    if (clean.length <= 8) return '••••••••';
+    return `${clean.slice(0, 4)}••••••••${clean.slice(-4)}`;
+  }
+
+  /**
+   * Returns active AI configuration with masked API key for dashboard display
+   */
+  getAISettings(): {
+    provider: AIProvider;
+    model: string;
+    baseUrl: string;
+    hasKey: boolean;
+    maskedKey: string;
+  } {
+    const provider = this.settings.aiProvider || config.AI_PROVIDER;
+    const model = this.settings.aiModel !== undefined ? this.settings.aiModel : config.AI_MODEL;
+    const baseUrl = this.settings.aiBaseUrl !== undefined ? this.settings.aiBaseUrl : config.AI_BASE_URL;
+    const rawKey = this.settings.aiApiKey !== undefined ? this.settings.aiApiKey : config.AI_API_KEY;
+
+    return {
+      provider,
+      model: model || '',
+      baseUrl: baseUrl || '',
+      hasKey: Boolean(rawKey && rawKey.trim()),
+      maskedKey: this.maskApiKey(rawKey),
+    };
+  }
+
+  /**
+   * Hot-reloads and persists runtime AI credentials and model selection
+   */
+  updateAISettings(update: {
+    provider?: AIProvider;
+    apiKey?: string;
+    model?: string;
+    baseUrl?: string;
+  }): DynamicSettings {
+    const patch: Partial<DynamicSettings> = {};
+
+    if (update.provider) {
+      patch.aiProvider = update.provider;
+    }
+    if (update.model !== undefined) {
+      patch.aiModel = update.model.trim();
+    }
+    if (update.baseUrl !== undefined) {
+      patch.aiBaseUrl = update.baseUrl.trim();
+    }
+    // Only update apiKey if not empty and doesn't contain bullet masking characters '•'
+    if (update.apiKey !== undefined && update.apiKey.trim() !== '') {
+      if (!update.apiKey.includes('•••')) {
+        patch.aiApiKey = update.apiKey.trim();
+      }
+    }
+
+    return this.updateSettings(patch);
   }
 }
 
