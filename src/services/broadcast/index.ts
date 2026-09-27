@@ -174,6 +174,16 @@ export class BroadcastManager {
           continue;
         }
 
+        // Connection Guard: if WhatsApp socket disconnected, pause loop until reconnection
+        while (!waClient.isConnected() && (job.status as BroadcastStatus) !== 'cancelled') {
+          logger.warn(
+            `[Broadcast Connection Guard] WhatsApp is not connected during job ${job.id}. Waiting for reconnection before sending to recipient ${job.currentIndex + 1}/${job.totalTargets}...`
+          );
+          await new Promise((resolve) => setTimeout(resolve, 3000));
+        }
+
+        if ((job.status as BroadcastStatus) === 'cancelled') break;
+
         const recipient = job.recipients[job.currentIndex];
         if (!recipient) break;
 
@@ -197,10 +207,13 @@ export class BroadcastManager {
                 caption: personalizedText,
                 fileName: job.media.fileName,
               },
-              { queued: false }
+              { queued: false, referenceId: `${job.id}_${recipient.phone}` }
             );
           } else {
-            await waClient.sendText(recipient.phone, personalizedText, { queued: false });
+            await waClient.sendText(recipient.phone, personalizedText, {
+              queued: false,
+              referenceId: `${job.id}_${recipient.phone}`,
+            });
           }
 
           recipient.status = 'sent';

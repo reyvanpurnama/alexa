@@ -6,6 +6,7 @@ import { messagesRoutes } from './api/messages.js';
 import { broadcastRoutes } from './api/broadcast.js';
 import { aiRoutes } from './api/ai.js';
 import { settingsRoutes } from './api/settings.js';
+import { queueRoutes } from './api/queue.js';
 
 export const apiRoutes: FastifyPluginAsync = async (fastify) => {
   // Authentication preHandler hook for protected API routes
@@ -36,4 +37,5 @@ export const apiRoutes: FastifyPluginAsync = async (fastify) => {
   await fastify.register(broadcastRoutes);
   await fastify.register(aiRoutes);
   await fastify.register(settingsRoutes);
+  await fastify.register(queueRoutes);
 };

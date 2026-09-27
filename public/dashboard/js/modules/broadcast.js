@@ -1,6 +1,7 @@
 import { fetchApi, showToast } from '../api.js';
 
 let bcTimer = null;
+let queueTimer = null;
 let selectedMinDelay = 4;
 let selectedMaxDelay = 8;
 
@@ -102,6 +103,7 @@ export function initBroadcast() {
         if (data.success) {
           showToast('Broadcast dimulai untuk ' + data.totalTargets + ' nomor');
           fetchBroadcastStatus();
+          fetchQueueAndMessages();
         } else {
           showToast(data.error || 'Gagal memulai broadcast', true);
         }
@@ -114,7 +116,7 @@ export function initBroadcast() {
     });
   }
 
-  // Pause / Resume / Cancel Controls
+  // Pause / Resume / Cancel Controls for Broadcast
   document.getElementById('btn-bc-pause')?.addEventListener('click', async () => {
     await fetchApi('/api/broadcast/pause', { method: 'POST' });
     fetchBroadcastStatus();
@@ -130,6 +132,38 @@ export function initBroadcast() {
     await fetchApi('/api/broadcast/cancel', { method: 'POST' });
     fetchBroadcastStatus();
   });
+
+  // Outbound Queue Management Buttons
+  document.getElementById('btn-queue-pause')?.addEventListener('click', async () => {
+    const res = await fetchApi('/api/queue/pause', { method: 'POST' });
+    if (res.success) {
+      showToast('Antrean pesan dijeda.');
+      fetchQueueAndMessages();
+    }
+  });
+
+  document.getElementById('btn-queue-resume')?.addEventListener('click', async () => {
+    const res = await fetchApi('/api/queue/resume', { method: 'POST' });
+    if (res.success) {
+      showToast('Antrean pesan dilanjutkan.');
+      fetchQueueAndMessages();
+    }
+  });
+
+  document.getElementById('btn-queue-clear')?.addEventListener('click', async () => {
+    if (!confirm('Kosongkan semua pesan yang belum terkirim di antrean?')) return;
+    const res = await fetchApi('/api/queue/clear', { method: 'POST' });
+    if (res.success) {
+      showToast('Antrean pesan berhasil dibersihkan.');
+      fetchQueueAndMessages();
+    }
+  });
+
+  // Initial load
+  fetchQueueAndMessages();
+  if (!queueTimer) {
+    queueTimer = setInterval(fetchQueueAndMessages, 4000);
+  }
 }
 
 export async function fetchBroadcastStatus() {
@@ -178,4 +212,118 @@ export async function fetchBroadcastStatus() {
       if (!bcTimer) bcTimer = setInterval(fetchBroadcastStatus, 2500);
     }
   } catch (err) {}
+}
+
+export async function fetchQueueAndMessages() {
+  try {
+    const [queueRes, messagesRes] = await Promise.all([
+      fetchApi('/api/queue/status'),
+      fetchApi('/api/messages/recent?limit=15'),
+    ]);
+
+    // Update Queue Badge and Buttons
+    const badgeEl = document.getElementById('queue-status-badge');
+    const btnPause = document.getElementById('btn-queue-pause');
+    const btnResume = document.getElementById('btn-queue-resume');
+
+    if (queueRes.success && badgeEl) {
+      const q = queueRes.queue;
+      if (q.isPaused) {
+        badgeEl.textContent = q.pausedByConnection
+          ? '⚠️ Dijeda (Menunggu WhatsApp Terhubung)'
+          : `⏸️ Dijeda Manual (${q.pending || 0} Antre)`;
+        badgeEl.style.color = 'var(--accent-orange)';
+        if (btnPause) btnPause.style.display = 'none';
+        if (btnResume) btnResume.style.display = 'inline-flex';
+      } else {
+        badgeEl.textContent = `🟢 Antrean Aktif (${q.pending || 0} Antre • Jeda ${q.delayMs / 1000}s)`;
+        badgeEl.style.color = 'var(--accent-green)';
+        if (btnPause) btnPause.style.display = 'inline-flex';
+        if (btnResume) btnResume.style.display = 'none';
+      }
+    }
+
+    // Render Recent Messages Table
+    if (messagesRes.success && messagesRes.messages) {
+      renderRecentMessages(messagesRes.messages);
+    }
+  } catch (err) {
+    // Silent fail for polling
+  }
+}
+
+function renderRecentMessages(messages) {
+  const tbody = document.getElementById('recent-messages-list');
+  if (!tbody) return;
+
+  if (!messages || messages.length === 0) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="5" style="text-align: center; color: var(--text-tertiary); padding: 18px;">
+          Belum ada riwayat pesan yang dikirim sejak server berjalan.
+        </td>
+      </tr>
+    `;
+    return;
+  }
+
+  tbody.innerHTML = messages
+    .map((msg) => {
+      const timeStr = formatTime(msg.queuedAt || msg.sentAt);
+      const targetStr = formatPhoneDisplay(msg.to);
+      const refOrId = msg.referenceId
+        ? `<span style="font-weight: 600; color: var(--text-primary);">${escapeHtml(msg.referenceId)}</span> <span style="font-size: 10px; color: var(--text-tertiary); font-family: var(--font-mono); display: block;">${escapeHtml(msg.id)}</span>`
+        : `<span style="font-family: var(--font-mono); color: var(--text-secondary);">${escapeHtml(msg.id)}</span>`;
+
+      const typeBadge = `<span style="text-transform: uppercase; font-size: 10px; padding: 2px 6px; border-radius: 4px; background: rgba(255,255,255,0.06); color: var(--text-tertiary);">${msg.type}</span>`;
+
+      return `
+        <tr style="border-bottom: 1px solid var(--border-subtle);">
+          <td style="padding: 10px; color: var(--text-tertiary); font-family: var(--font-mono);">${timeStr}</td>
+          <td style="padding: 10px; font-weight: 500; font-family: var(--font-mono);">${targetStr}</td>
+          <td style="padding: 10px;">${refOrId}</td>
+          <td style="padding: 10px;">${typeBadge}</td>
+          <td style="padding: 10px; text-align: right;">${renderStatusPill(msg.status)}</td>
+        </tr>
+      `;
+    })
+    .join('');
+}
+
+function renderStatusPill(status) {
+  switch (status) {
+    case 'queued':
+      return `<span class="status-pill queued">⏳ Dalam Antrean</span>`;
+    case 'sent':
+      return `<span class="status-pill sent">✓ Centang 1 (Server)</span>`;
+    case 'delivered':
+      return `<span class="status-pill delivered">✓✓ Centang 2 (Masuk HP)</span>`;
+    case 'read':
+      return `<span class="status-pill read">✓✓ Dibaca (Centang Biru)</span>`;
+    case 'failed':
+      return `<span class="status-pill failed">✕ Gagal Kirim</span>`;
+    default:
+      return `<span class="status-pill">${status}</span>`;
+  }
+}
+
+function formatTime(timestamp) {
+  if (!timestamp) return '--:--:--';
+  const d = new Date(timestamp);
+  return d.toLocaleTimeString('id-ID', { hour12: false });
+}
+
+function formatPhoneDisplay(jid) {
+  if (!jid) return '-';
+  const clean = jid.split('@')[0];
+  return '+' + clean;
+}
+
+function escapeHtml(str) {
+  if (!str) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
 }

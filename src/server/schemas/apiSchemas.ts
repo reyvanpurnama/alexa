@@ -3,6 +3,8 @@ import { z } from 'zod';
 export const sendMessageSchema = z.object({
   to: z.string().min(5, 'Target phone number or JID is required'),
   message: z.string().min(1, 'Message text cannot be empty'),
+  referenceId: z.string().max(100).optional(),
+  messageId: z.string().max(100).optional(),
   queued: z.boolean().optional().default(true),
 });
 
@@ -13,6 +15,8 @@ export const sendMediaSchema = z.object({
   caption: z.string().optional(),
   fileName: z.string().optional(),
   mimetype: z.string().optional(),
+  referenceId: z.string().max(100).optional(),
+  messageId: z.string().max(100).optional(),
   queued: z.boolean().optional().default(true),
 });
 

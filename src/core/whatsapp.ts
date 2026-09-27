@@ -14,7 +14,9 @@ import { logger, baileysLogger } from '../utils/logger.js';
 import { formatPhoneNumberForPairing } from '../utils/jid.js';
 import { handleIncomingMessage } from '../handlers/messageHandler.js';
 import { sessionManager, type SessionProfile } from './sessionManager.js';
-import { messageSender, type SendMediaParams } from './messageSender.js';
+import { messageSender, type SendMediaParams, type SendMessageOptions } from './messageSender.js';
+import { messageQueue } from '../queue/messageQueue.js';
+import { messageTracker } from '../services/messages/messageTracker.js';
 
 export type WhatsAppStatus =
   | 'INITIALIZING'
@@ -105,6 +107,7 @@ export class WhatsAppClient {
         this.status = 'DISCONNECTED';
         this.qrCode = null;
         this.user = null;
+        messageQueue.pauseForConnection();
 
         if (this.isExplicitLogout) {
           logger.info('[WhatsApp] Connection closed due to explicit logout. Reconnect suppressed.');
@@ -128,6 +131,7 @@ export class WhatsAppClient {
         this.pairingCode = null;
         this.reconnectAttempts = 0;
         this.isReconnecting = false;
+        messageQueue.resumeForConnection();
 
         const authUser = this.sock?.user;
         this.user = authUser
@@ -151,6 +155,41 @@ export class WhatsAppClient {
           }
         } catch (err) {
           logger.error({ err }, 'Error handling incoming message');
+        }
+      }
+    });
+
+    // Outbound delivery status receipts dispatcher (Centang 1, Centang 2 Abu, Centang 2 Biru)
+    this.sock.ev.on('messages.update', async (updates) => {
+      for (const update of updates) {
+        if (!update.key?.id) continue;
+        const msgId = update.key.id;
+        const rawStatus = update.update?.status;
+
+        if (rawStatus !== undefined && rawStatus !== null) {
+          let deliveryStatus: 'failed' | 'sent' | 'delivered' | 'read' | null = null;
+
+          // WAMessageStatus mapping:
+          // 0: ERROR, 1: PENDING, 2: SERVER_ACK, 3: DELIVERY_ACK, 4: READ, 5: PLAYED
+          switch (rawStatus) {
+            case 0: // ERROR
+              deliveryStatus = 'failed';
+              break;
+            case 2: // SERVER_ACK (Centang 1)
+              deliveryStatus = 'sent';
+              break;
+            case 3: // DELIVERY_ACK (Centang 2 Abu-abu)
+              deliveryStatus = 'delivered';
+              break;
+            case 4: // READ (Centang 2 Biru)
+            case 5: // PLAYED
+              deliveryStatus = 'read';
+              break;
+          }
+
+          if (deliveryStatus) {
+            messageTracker.updateStatus(msgId, deliveryStatus);
+          }
         }
       }
     });
@@ -293,7 +332,7 @@ export class WhatsAppClient {
     return await messageSender.checkNumber(this.sock!, phoneNumber);
   }
 
-  async sendText(target: string, text: string, options: { queued?: boolean } = { queued: true }) {
+  async sendText(target: string, text: string, options: SendMessageOptions = { queued: true }) {
     this.ensureConnected();
     return await messageSender.sendText(this.sock!, target, text, options);
   }
@@ -301,7 +340,7 @@ export class WhatsAppClient {
   async sendMedia(
     target: string,
     params: SendMediaParams,
-    options: { queued?: boolean } = { queued: true }
+    options: SendMessageOptions = { queued: true }
   ) {
     this.ensureConnected();
     return await messageSender.sendMedia(this.sock!, target, params, options);

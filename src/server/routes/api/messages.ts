@@ -1,6 +1,7 @@
 import type { FastifyPluginAsync } from 'fastify';
 import { waClient } from '../../../core/whatsapp.js';
 import { messageQueue } from '../../../queue/messageQueue.js';
+import { messageTracker, type DeliveryStatus } from '../../../services/messages/messageTracker.js';
 import { checkNumberSchema, sendMessageSchema, sendMediaSchema } from '../../schemas/apiSchemas.js';
 
 export const messagesRoutes: FastifyPluginAsync = async (fastify) => {
@@ -38,7 +39,7 @@ export const messagesRoutes: FastifyPluginAsync = async (fastify) => {
     }
   });
 
-  // POST /api/send-message - Send Text Message
+  // POST /api/send-message - Send Text Message (Immediate or Queued with Lifecycle Tracing)
   fastify.post('/api/send-message', async (request, reply) => {
     const parse = sendMessageSchema.safeParse(request.body);
     if (!parse.success) {
@@ -57,14 +58,25 @@ export const messagesRoutes: FastifyPluginAsync = async (fastify) => {
     }
 
     try {
-      const { to, message, queued } = parse.data;
-      const result = await waClient.sendText(to, message, { queued });
-      return reply.send({
+      const { to, message, queued, referenceId, messageId } = parse.data;
+      const result = await waClient.sendText(to, message, {
+        queued,
+        referenceId,
+        messageId,
+      });
+
+      const httpStatus = result.status === 'queued' ? 202 : 200;
+      return reply.code(httpStatus).send({
         success: true,
-        message: queued ? 'Message scheduled in anti-ban queue' : 'Message sent immediately',
-        target: to,
-        queueStatus: messageQueue.getStats(),
-        result,
+        status: result.status,
+        message:
+          result.status === 'queued'
+            ? 'Message accepted into anti-ban queue'
+            : 'Message sent immediately',
+        messageId: result.messageId,
+        referenceId: result.referenceId,
+        target: result.to,
+        queue: messageQueue.getStats(),
       });
     } catch (err: unknown) {
       return reply.code(500).send({
@@ -93,20 +105,27 @@ export const messagesRoutes: FastifyPluginAsync = async (fastify) => {
     }
 
     try {
-      const { to, type, url, caption, fileName, mimetype, queued } = parse.data;
+      const { to, type, url, caption, fileName, mimetype, queued, referenceId, messageId } =
+        parse.data;
       const result = await waClient.sendMedia(
         to,
         { type, url, caption, fileName, mimetype },
-        { queued }
+        { queued, referenceId, messageId }
       );
 
-      return reply.send({
+      const httpStatus = result.status === 'queued' ? 202 : 200;
+      return reply.code(httpStatus).send({
         success: true,
-        message: queued ? 'Media scheduled in anti-ban queue' : 'Media sent immediately',
-        target: to,
+        status: result.status,
+        message:
+          result.status === 'queued'
+            ? 'Media accepted into anti-ban queue'
+            : 'Media sent immediately',
+        messageId: result.messageId,
+        referenceId: result.referenceId,
+        target: result.to,
         type,
-        queueStatus: messageQueue.getStats(),
-        result,
+        queue: messageQueue.getStats(),
       });
     } catch (err: unknown) {
       return reply.code(500).send({
@@ -114,5 +133,62 @@ export const messagesRoutes: FastifyPluginAsync = async (fastify) => {
         error: (err as Error).message || 'Failed to send media',
       });
     }
+  });
+
+  // GET /api/messages/status - Check delivery status by client referenceId
+  fastify.get('/api/messages/status', async (request, reply) => {
+    const { referenceId } = request.query as { referenceId?: string };
+    if (!referenceId || !referenceId.trim()) {
+      return reply.code(400).send({
+        success: false,
+        error: 'Query parameter "referenceId" is required',
+      });
+    }
+
+    const record = messageTracker.getByReferenceId(referenceId.trim());
+    if (!record) {
+      return reply.code(404).send({
+        success: false,
+        error: `No message found for referenceId "${referenceId}"`,
+      });
+    }
+
+    return reply.send({
+      success: true,
+      message: record,
+    });
+  });
+
+  // GET /api/messages/:id/status - Check delivery status by WhatsApp messageId
+  fastify.get('/api/messages/:id/status', async (request, reply) => {
+    const { id } = request.params as { id: string };
+    const record = messageTracker.getById(id);
+
+    if (!record) {
+      return reply.code(404).send({
+        success: false,
+        error: `No message found for ID "${id}" or record has expired from cache`,
+      });
+    }
+
+    return reply.send({
+      success: true,
+      message: record,
+    });
+  });
+
+  // GET /api/messages/recent - Inspect recent outbound messages & queue health
+  fastify.get('/api/messages/recent', async (request, reply) => {
+    const { limit, status } = request.query as { limit?: string; status?: DeliveryStatus };
+    const numLimit = Math.min(200, Math.max(1, parseInt(limit || '50', 10) || 50));
+
+    const records = messageTracker.getRecent(numLimit, status);
+    return reply.send({
+      success: true,
+      count: records.length,
+      stats: messageTracker.getStats(),
+      queue: messageQueue.getStats(),
+      messages: records,
+    });
   });
 };
