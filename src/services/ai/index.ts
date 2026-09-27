@@ -210,7 +210,52 @@ This user is an AUTHENTICATED OWNER/ADMIN of the system (+${options?.sessionId})
 
     const supportsTools = provider === 'groq' || provider === 'openai';
 
-    let currentCompletion = await client.chat.completions.create({
+    const createCompletionWithRecovery = async (params: any): Promise<any> => {
+      try {
+        return await client.chat.completions.create(params);
+      } catch (err: any) {
+        const isToolUseFailed =
+          err?.status === 400 &&
+          (err?.code === 'tool_use_failed' || err?.error?.code === 'tool_use_failed');
+        const failedGen = err?.error?.failed_generation;
+        if (isToolUseFailed && typeof failedGen === 'string') {
+          const funcMatch = failedGen.match(/<function=([^>]+)>([\s\S]*?)<\/function>/);
+          if (funcMatch) {
+            const funcName = funcMatch[1].trim();
+            const body = funcMatch[2];
+            const paramMatches = [...body.matchAll(/<parameter=([^>]+)>\n?([\s\S]*?)\n?<\/parameter>/g)];
+            const recoveredArgs: Record<string, string> = {};
+            for (const m of paramMatches) {
+              recoveredArgs[m[1].trim()] = m[2].trim();
+            }
+            return {
+              id: 'recovered-' + Date.now(),
+              choices: [
+                {
+                  message: {
+                    role: 'assistant',
+                    content: null,
+                    tool_calls: [
+                      {
+                        id: 'call_rec_' + Math.random().toString(36).substring(2, 9),
+                        type: 'function',
+                        function: {
+                          name: funcName,
+                          arguments: JSON.stringify(recoveredArgs),
+                        },
+                      },
+                    ],
+                  },
+                },
+              ],
+            };
+          }
+        }
+        throw err;
+      }
+    };
+
+    let currentCompletion = await createCompletionWithRecovery({
       model,
       messages,
       temperature: 0.7,
@@ -257,7 +302,7 @@ This user is an AUTHENTICATED OWNER/ADMIN of the system (+${options?.sessionId})
       iterations++;
 
       // Next iteration allows model to either call another tool or produce final answer
-      currentCompletion = await client.chat.completions.create({
+      currentCompletion = await createCompletionWithRecovery({
         model,
         messages,
         temperature: 0.7,
