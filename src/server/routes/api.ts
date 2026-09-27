@@ -9,6 +9,7 @@ import { settingsRoutes } from './api/settings.js';
 import { queueRoutes } from './api/queue.js';
 import { syncRoutes } from './api/sync.js';
 import { chatRoutes } from './api/chat.js';
+import { takeoverRoutes } from './api/takeover.js';
 
 export const apiRoutes: FastifyPluginAsync = async (fastify) => {
   // Authentication preHandler hook for protected API routes
@@ -47,4 +48,5 @@ export const apiRoutes: FastifyPluginAsync = async (fastify) => {
   await fastify.register(queueRoutes);
   await fastify.register(syncRoutes);
   await fastify.register(chatRoutes);
+  await fastify.register(takeoverRoutes);
 };

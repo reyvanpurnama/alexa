@@ -1352,4 +1352,136 @@ input:checked + .slider:before {
   text-align: center;
 }
 
+/* ==========================================================================
+   Human Takeover & Escalation Control (Apple HIG Quiet State)
+   ========================================================================== */
+
+.takeover-empty-calm {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: rgba(48, 209, 88, 0.05);
+  border: 1px solid rgba(48, 209, 88, 0.18);
+  border-radius: var(--radius-md);
+  padding: 12px 16px;
+  transition: all 0.2s ease;
+}
+
+.takeover-empty-icon {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: rgba(48, 209, 88, 0.15);
+  color: #30d158;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.takeover-empty-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 13px;
+}
+
+.takeover-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.takeover-card-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--bg-surface-elevated);
+  border: 1px solid rgba(255, 159, 10, 0.25);
+  border-radius: var(--radius-md);
+  padding: 10px 14px;
+  transition: all 0.15s ease;
+}
+
+.takeover-card-item:hover {
+  background: rgba(255, 159, 10, 0.04);
+  border-color: rgba(255, 159, 10, 0.4);
+}
+
+.takeover-identity {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.takeover-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba(255, 159, 10, 0.15);
+  color: #ff9f0a;
+  border: 1px solid rgba(255, 159, 10, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.takeover-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.takeover-phone {
+  font-family: var(--font-mono);
+  font-weight: 600;
+  color: var(--text-primary);
+  font-size: 13px;
+}
+
+.takeover-meta-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+}
+
+.takeover-reason-tag {
+  color: #ff9f0a;
+  background: rgba(255, 159, 10, 0.12);
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: 10.5px;
+}
+
+.takeover-countdown {
+  color: var(--text-tertiary);
+  font-family: var(--font-mono);
+}
+
+.btn-unmute-action {
+  background: rgba(48, 209, 88, 0.12);
+  color: #30d158;
+  border: 1px solid rgba(48, 209, 88, 0.3);
+  border-radius: var(--radius-sm);
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.btn-unmute-action:hover {
+  background: rgba(48, 209, 88, 0.22);
+  border-color: rgba(48, 209, 88, 0.5);
+}
+
+
 

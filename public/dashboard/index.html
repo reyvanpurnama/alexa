@@ -68,6 +68,38 @@
           </div>
         </div>
 
+        <!-- Sesi Eskalasi & Human Takeover (Muted Sessions & Anti-Jail Control) -->
+        <div class="bento-card col-12" id="card-takeover-escalation">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
+            <div>
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <div class="card-title" style="margin-bottom: 0;">Sesi Eskalasi & Human Takeover</div>
+                <span id="takeover-count-badge" class="chat-pill muted" style="display: none;">0 Dijeda</span>
+              </div>
+              <div class="card-meta" id="takeover-subtitle">Percakapan yang dialihkan sementara ke penanganan manual staf / admin</div>
+            </div>
+            <div style="display: flex; gap: 8px; align-items: center;">
+              <button class="btn btn-secondary btn-sm" id="btn-refresh-takeover" style="display: inline-flex; align-items: center; gap: 4px;">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
+                Segarkan
+              </button>
+              <button class="btn btn-ghost btn-sm" id="btn-unmute-all" style="color: var(--accent-green); font-size: 11px; display: none;">
+                Lanjutkan Semua AI (Unmute All)
+              </button>
+            </div>
+          </div>
+
+          <div id="takeover-list-container">
+            <div class="takeover-empty-calm">
+              <div class="takeover-empty-icon">✓</div>
+              <div class="takeover-empty-text">
+                <span style="font-weight: 500; color: var(--text-primary);">Otonomi AI Berjalan Penuh</span>
+                <span style="color: var(--text-tertiary); font-size: 12px;">Tidak ada nomor pelanggan yang sedang dijeda untuk eskalasi manual.</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <!-- Quick Message Sender -->
         <div class="bento-card col-12">
           <div class="card-title">Uji Pengiriman Pesan</div>

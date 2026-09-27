@@ -20,11 +20,13 @@ function formatChatTime(isoString) {
   if (diffSec < 60) return `${diffSec} detik lalu`;
   if (diffSec < 3600) return `${Math.floor(diffSec / 60)} mnt lalu`;
 
-  return date.toLocaleTimeString('id-ID', {
-    timeZone: 'Asia/Jakarta',
-    hour: '2-digit',
-    minute: '2-digit',
-  }) + ' WIB';
+  return (
+    date.toLocaleTimeString('id-ID', {
+      timeZone: 'Asia/Jakarta',
+      hour: '2-digit',
+      minute: '2-digit',
+    }) + ' WIB'
+  );
 }
 
 export function initOverview() {
@@ -74,6 +76,30 @@ export function initOverview() {
     });
   }
 
+  // Takeover & Escalation Action Buttons
+  const btnRefreshTakeover = document.getElementById('btn-refresh-takeover');
+  if (btnRefreshTakeover) {
+    btnRefreshTakeover.addEventListener('click', () => fetchTakeoverStatus());
+  }
+
+  const btnUnmuteAll = document.getElementById('btn-unmute-all');
+  if (btnUnmuteAll) {
+    btnUnmuteAll.addEventListener('click', async () => {
+      if (!confirm('Lanjutkan kembali seluruh sesi percakapan ke mode AI otonom?')) return;
+      try {
+        const data = await fetchApi('/api/takeover/unmute-all', { method: 'POST' });
+        if (data.success) {
+          showToast(data.message || 'Semua sesi percakapan dikembalikan ke AI');
+          fetchTakeoverStatus();
+        } else {
+          showToast(data.error || 'Gagal mereset sesi takeover', true);
+        }
+      } catch {
+        showToast('Terjadi kesalahan mereset sesi takeover', true);
+      }
+    });
+  }
+
   // Chat activity action buttons
   const btnRefreshChats = document.getElementById('btn-refresh-chats');
   if (btnRefreshChats) {
@@ -99,6 +125,7 @@ export function initOverview() {
   }
 
   fetchOverviewStatus();
+  fetchTakeoverStatus();
   fetchRecentChats();
 
   // Low-frequency quiet polling (Apple HIG Battery Saver Guard)
@@ -106,6 +133,7 @@ export function initOverview() {
     if (document.visibilityState === 'visible') {
       const overviewTab = document.getElementById('tab-overview');
       if (overviewTab && overviewTab.classList.contains('active')) {
+        fetchTakeoverStatus(true);
         fetchRecentChats(true);
       }
     }
@@ -152,6 +180,109 @@ export async function fetchOverviewStatus() {
       }
     }
   } catch (err) {}
+}
+
+export async function fetchTakeoverStatus(isSilent = false) {
+  const container = document.getElementById('takeover-list-container');
+  const countBadge = document.getElementById('takeover-count-badge');
+  const btnUnmuteAll = document.getElementById('btn-unmute-all');
+  if (!container) return;
+
+  try {
+    const data = await fetchApi('/api/takeover/muted');
+    if (!data.success) return;
+
+    const sessions = data.sessions || [];
+
+    if (sessions.length === 0) {
+      if (countBadge) countBadge.style.display = 'none';
+      if (btnUnmuteAll) btnUnmuteAll.style.display = 'none';
+
+      container.innerHTML = `
+        <div class="takeover-empty-calm">
+          <div class="takeover-empty-icon">✓</div>
+          <div class="takeover-empty-text">
+            <span style="font-weight: 500; color: var(--text-primary);">Otonomi AI Berjalan Penuh</span>
+            <span style="color: var(--text-tertiary); font-size: 12px;">Tidak ada nomor pelanggan yang sedang dijeda untuk eskalasi manual.</span>
+          </div>
+        </div>
+      `;
+      return;
+    }
+
+    if (countBadge) {
+      countBadge.style.display = 'inline-block';
+      countBadge.textContent = `${sessions.length} Dijeda`;
+    }
+
+    if (btnUnmuteAll) {
+      btnUnmuteAll.style.display = 'inline-flex';
+    }
+
+    container.innerHTML = `
+      <div class="takeover-list">
+        ${sessions
+          .map((s) => {
+            const avatarLetter = (s.phone || 'W').replace(/\D/g, '').slice(-2);
+            return `
+              <div class="takeover-card-item">
+                <div class="takeover-identity">
+                  <div class="takeover-avatar">${avatarLetter}</div>
+                  <div class="takeover-info">
+                    <span class="takeover-phone">${escapeHtml(s.phone)}</span>
+                    <div class="takeover-meta-row">
+                      <span class="takeover-reason-tag">${escapeHtml(s.reasonLabel)}</span>
+                      <span class="takeover-countdown">⏳ Sisa ${s.remainingMinutes} mnt lagi</span>
+                    </div>
+                  </div>
+                </div>
+                <div>
+                  <button class="btn-unmute-action" data-target="${escapeHtml(s.id)}" title="Lanjutkan kembali mode AI otonom">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                    Lanjutkan AI
+                  </button>
+                </div>
+              </div>
+            `;
+          })
+          .join('')}
+      </div>
+    `;
+
+    // Attach click listeners to individual unmute buttons
+    container.querySelectorAll('.btn-unmute-action').forEach((btn) => {
+      btn.addEventListener('click', async () => {
+        const targetId = btn.getAttribute('data-target');
+        if (!targetId) return;
+
+        btn.disabled = true;
+        btn.textContent = 'Memproses...';
+
+        try {
+          const res = await fetchApi('/api/takeover/unmute', {
+            method: 'POST',
+            body: { targetId },
+          });
+
+          if (res.success) {
+            showToast(`Percakapan +${targetId} dilanjutkan ke mode AI`);
+            fetchTakeoverStatus();
+          } else {
+            showToast(res.message || 'Gagal mengaktifkan AI', true);
+            btn.disabled = false;
+            btn.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg> Lanjutkan AI`;
+          }
+        } catch {
+          showToast('Terjadi kesalahan saat memproses unmute', true);
+          btn.disabled = false;
+        }
+      });
+    });
+  } catch (err) {
+    if (!isSilent) {
+      console.warn('Failed to fetch takeover status:', err);
+    }
+  }
 }
 
 export async function fetchRecentChats(isSilent = false) {

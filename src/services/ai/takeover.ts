@@ -3,10 +3,42 @@ import { logger } from '../../utils/logger.js';
 export interface MuteSession {
   until: number;
   reason: string;
+  mutedAt: number;
+}
+
+export interface MutedSessionInfo {
+  id: string;
+  phone: string;
+  remainingMinutes: number;
+  remainingSeconds: number;
+  reason: string;
+  reasonLabel: string;
+  mutedAt: number;
+  until: number;
 }
 
 export class TakeoverManager {
   private mutedSessions = new Map<string, MuteSession>();
+
+  /**
+   * Translates internal reason code to a human-readable label
+   */
+  private getReasonLabel(reason: string): string {
+    switch (reason) {
+      case 'customer_manual_command':
+        return 'Permintaan Pelanggan (/human)';
+      case 'payment_verification':
+        return 'Verifikasi Bukti Pembayaran';
+      case 'owner_manual_reply':
+        return 'Balasan Manual Owner (WhatsApp)';
+      case 'owner_command_mute':
+        return 'Perintah Manual /mute';
+      case 'ai_escalation':
+        return 'Eskalasi Otomatis AI ke Admin';
+      default:
+        return reason || 'Manual Takeover';
+    }
+  }
 
   /**
    * Mute AI responses for a specific chat or user
@@ -16,9 +48,10 @@ export class TakeoverManager {
    */
   mute(targetId: string, durationMinutes = 30, reason = 'manual_takeover'): void {
     const cleanId = targetId.replace(/@s\.whatsapp\.net|@lid/, '').replace(/\D/g, '');
-    const until = Date.now() + durationMinutes * 60 * 1000;
+    const now = Date.now();
+    const until = now + durationMinutes * 60 * 1000;
 
-    this.mutedSessions.set(cleanId, { until, reason });
+    this.mutedSessions.set(cleanId, { until, reason, mutedAt: now });
     logger.info(`[Takeover] AI auto-reply muted for ${cleanId} for ${durationMinutes}m. Reason: ${reason}`);
   }
 
@@ -32,6 +65,16 @@ export class TakeoverManager {
       logger.info(`[Takeover] AI auto-reply unmuted for ${cleanId}. Resuming autonomous mode.`);
     }
     return existed;
+  }
+
+  /**
+   * Unmute all currently muted chats and restore full autonomous AI mode
+   */
+  unmuteAll(): number {
+    const count = this.mutedSessions.size;
+    this.mutedSessions.clear();
+    logger.info(`[Takeover] AI auto-reply unmuted for all ${count} session(s). Full autonomous mode restored.`);
+    return count;
   }
 
   /**
@@ -52,7 +95,7 @@ export class TakeoverManager {
   }
 
   /**
-   * Get detailed mute information
+   * Get detailed mute information for a single chat
    */
   getMuteInfo(targetId: string): { isMuted: boolean; remainingMinutes: number; reason?: string } {
     const cleanId = targetId.replace(/@s\.whatsapp\.net|@lid/, '').replace(/\D/g, '');
@@ -70,6 +113,36 @@ export class TakeoverManager {
       remainingMinutes: Math.ceil(remainingMs / (60 * 1000)),
       reason: session.reason,
     };
+  }
+
+  /**
+   * Retrieves all currently active muted sessions with remaining time and context
+   */
+  getAllMuted(): MutedSessionInfo[] {
+    const now = Date.now();
+    const results: MutedSessionInfo[] = [];
+
+    for (const [id, session] of this.mutedSessions.entries()) {
+      const remainingMs = session.until - now;
+      if (remainingMs <= 0) {
+        this.mutedSessions.delete(id);
+        continue;
+      }
+
+      results.push({
+        id,
+        phone: id.startsWith('+') ? id : `+${id}`,
+        remainingMinutes: Math.ceil(remainingMs / (60 * 1000)),
+        remainingSeconds: Math.ceil(remainingMs / 1000),
+        reason: session.reason,
+        reasonLabel: this.getReasonLabel(session.reason),
+        mutedAt: session.mutedAt || now - 60000,
+        until: session.until,
+      });
+    }
+
+    // Sort by expiration time ascending (soonest to expire first)
+    return results.sort((a, b) => a.until - b.until);
   }
 }
 
