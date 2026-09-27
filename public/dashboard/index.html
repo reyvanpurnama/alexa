@@ -85,6 +85,35 @@
             </div>
           </div>
         </div>
+
+        <!-- Recent Chat Activity (Aktivitas Percakapan Terkini) -->
+        <div class="bento-card col-12">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
+            <div>
+              <div class="card-title" style="margin-bottom: 2px;">Aktivitas Percakapan Terkini</div>
+              <div class="card-meta" id="chat-activity-subtitle">Log pertanyaan pengguna dan respons asisten AI secara real-time</div>
+            </div>
+            <div style="display: flex; gap: 8px; align-items: center;">
+              <span id="chat-stats-badge" style="display: none; font-size: 11px; padding: 3px 8px; border-radius: 6px; background: rgba(255,255,255,0.05); color: var(--text-secondary); border: 1px solid var(--border-subtle); font-family: var(--font-mono);">
+                0 percakapan
+              </span>
+              <button class="btn btn-secondary btn-sm" id="btn-refresh-chats" style="display: inline-flex; align-items: center; gap: 4px;">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
+                Segarkan
+              </button>
+              <button class="btn btn-ghost btn-sm" id="btn-clear-chats" style="color: var(--accent-red); font-size: 11px;">
+                Bersihkan Log
+              </button>
+            </div>
+          </div>
+
+          <div id="chat-activity-stream" class="chat-activity-stream">
+            <div class="chat-empty-state">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+              <span>Belum ada riwayat percakapan yang tercatat</span>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
 

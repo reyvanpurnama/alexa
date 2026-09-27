@@ -138,7 +138,9 @@ export class LocalStore {
 
     try {
       const tables = this.db
-        .prepare("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%';")
+        .prepare(
+          "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' AND name NOT LIKE '_%';"
+        )
         .all() as { name: string }[];
 
       if (tables.length === 0) return '';
@@ -295,7 +297,9 @@ export class LocalStore {
     try {
       const mode = this.db.prepare('PRAGMA journal_mode;').get() as { journal_mode: string };
       const tables = this.db
-        .prepare("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%';")
+        .prepare(
+          "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' AND name NOT LIKE '_%';"
+        )
         .all() as { name: string }[];
 
       const tableStats: Record<string, number> = {};
@@ -315,6 +319,13 @@ export class LocalStore {
     } catch {
       return { path: this.dbPath, journalMode: 'error', tablesCount: 0, tables: {} };
     }
+  }
+
+  /**
+   * Returns the underlying DatabaseSync instance for internal platform services
+   */
+  getDatabase(): DatabaseSync | null {
+    return this.db;
   }
 }
 

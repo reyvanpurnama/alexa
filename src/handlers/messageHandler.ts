@@ -8,6 +8,7 @@ import { logger } from '../utils/logger.js';
 import { dispatchWebhook } from '../utils/webhook.js';
 import { aiService, takeoverManager, messageDebouncer } from '../services/ai/index.js';
 import { alertService } from '../services/alerts/index.js';
+import { chatLogger } from '../services/chat/chatLogger.js';
 
 export { type SerializedMessage };
 
@@ -113,6 +114,15 @@ export async function handleIncomingMessage(sock: WASocket, rawMsg: WAMessage): 
     if (settingsManager.getSettings().aiAutoReply) {
       // If chat is currently muted or handled by human agent, skip AI reply
       if (takeoverManager.isMuted(m.senderNumber) || takeoverManager.isMuted(m.from)) {
+        chatLogger.log({
+          sessionId: m.from || m.senderNumber,
+          senderNumber: m.senderNumber,
+          senderName: m.pushName || m.senderNumber,
+          userMessage: m.body || `[Lampiran ${m.type}]`,
+          aiResponse: '[AI SNOOZED / HUMAN TAKEOVER]',
+          status: 'muted',
+          source: 'system',
+        });
         return;
       }
 

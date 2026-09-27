@@ -1,6 +1,7 @@
 import type { SerializedMessage } from '../../core/serializer.js';
 import { aiService } from './index.js';
 import { takeoverManager } from './takeover.js';
+import { chatLogger } from '../chat/chatLogger.js';
 import { logger } from '../../utils/logger.js';
 
 import { config } from '../../config/index.js';
@@ -84,6 +85,7 @@ export class MessageDebouncer {
       session.lastMessage.sendTyping(true).catch(() => {});
     }, 4000);
 
+    const startTime = Date.now();
     try {
       const response = await aiService.generateResponse(combinedPrompt, {
         sessionId: userId,
@@ -93,13 +95,46 @@ export class MessageDebouncer {
       await session.lastMessage.sendTyping(false);
 
       if (response) {
+        const latencyMs = Date.now() - startTime;
+        logger.info(
+          {
+            userId,
+            response,
+            latencyMs,
+          },
+          '[AI Outbound Response] Sent response to user'
+        );
+
+        chatLogger.log({
+          sessionId: userId,
+          senderNumber: userId,
+          senderName: session.lastMessage.pushName || userId,
+          userMessage: combinedPrompt,
+          aiResponse: response,
+          status: 'replied',
+          latencyMs,
+          source: 'ai',
+        });
+
         await session.lastMessage.reply(response);
       }
     } catch (error: any) {
       clearInterval(typingHeartbeat);
       await session.lastMessage.sendTyping(false);
 
+      const latencyMs = Date.now() - startTime;
       logger.error({ error, userId }, 'Error generating AI response for debounced messages');
+
+      chatLogger.log({
+        sessionId: userId,
+        senderNumber: userId,
+        senderName: session.lastMessage.pushName || userId,
+        userMessage: combinedPrompt,
+        aiResponse: null,
+        status: 'error',
+        latencyMs,
+        source: 'ai',
+      });
 
       const isRateLimit =
         error?.status === 429 ||
