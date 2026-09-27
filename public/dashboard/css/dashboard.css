@@ -1498,5 +1498,16 @@ input:checked + .slider:before {
   border-color: rgba(48, 209, 88, 0.5);
 }
 
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+#ai-model-status-chip {
+  font-family: var(--font-sans);
+  letter-spacing: -0.01em;
+  transition: all 0.2s ease;
+}
+
 
 

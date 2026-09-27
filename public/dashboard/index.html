@@ -377,9 +377,9 @@
                 Ganti provider, model bahasa, atau API Key secara instan tanpa restart bot.
               </p>
 
-              <!-- Provider Selection -->
-              <div class="form-group" style="margin-bottom: 10px;">
-                <label class="form-label" for="select-ai-provider">Penyedia AI (Provider)</label>
+              <!-- 1. Provider Selection -->
+              <div class="form-group" style="margin-bottom: 12px;">
+                <label class="form-label" for="select-ai-provider">1. Penyedia AI (Provider)</label>
                 <select id="select-ai-provider" class="form-input" style="font-size: 12.5px;">
                   <option value="groq">Groq (Ultra Cepat & Ringkas)</option>
                   <option value="gemini">Google Gemini</option>
@@ -390,37 +390,44 @@
                 </select>
               </div>
 
-              <!-- Model Selection -->
-              <div class="form-group" style="margin-bottom: 10px;">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;">
-                  <label class="form-label" for="select-ai-model" style="margin-bottom: 0;">Model Bahasa</label>
-                  <button type="button" id="btn-toggle-custom-model" style="background: none; border: none; font-size: 11px; color: var(--accent-blue); cursor: pointer; padding: 0;">Ketik Manual</button>
-                </div>
-                <select id="select-ai-model" class="form-input" style="font-size: 12.5px;"></select>
-                <input type="text" id="input-custom-model" class="form-input" placeholder="contoh: llama-3.3-70b-versatile" style="display: none; margin-top: 6px; font-size: 12px; font-family: var(--font-mono);" />
-              </div>
-
               <!-- Base URL (Conditional for Custom / Ollama) -->
-              <div class="form-group" id="group-ai-base-url" style="display: none; margin-bottom: 10px;">
+              <div class="form-group" id="group-ai-base-url" style="display: none; margin-bottom: 12px;">
                 <label class="form-label" for="input-ai-base-url">Base URL Endpoint</label>
                 <input type="text" id="input-ai-base-url" class="form-input" placeholder="https://api.groq.com/openai/v1" style="font-size: 12px; font-family: var(--font-mono);" />
               </div>
 
-              <!-- API Key Input with Reveal & Masked display -->
+              <!-- 2. API Key Input with Reveal & Sync Action -->
               <div class="form-group" style="margin-bottom: 12px;">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;">
-                  <label class="form-label" for="input-ai-api-key" style="margin-bottom: 0;">Kunci API (API Key)</label>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 3px;">
+                  <label class="form-label" for="input-ai-api-key" style="margin-bottom: 0;">2. Kunci API (API Key)</label>
                   <span id="ai-key-masked-display" style="font-size: 10.5px; color: var(--text-tertiary); font-family: var(--font-mono);"></span>
                 </div>
                 <div style="display: flex; gap: 6px; align-items: center;">
-                  <input type="password" id="input-ai-api-key" class="form-input" placeholder="Isi untuk mengganti API Key..." style="flex: 1; font-family: var(--font-mono); font-size: 12px;" />
+                  <input type="password" id="input-ai-api-key" class="form-input" placeholder="Masukkan API Key baru..." style="flex: 1; font-family: var(--font-mono); font-size: 12px;" />
                   <button type="button" class="btn btn-secondary btn-sm" id="btn-toggle-ai-key-mask" title="Tampilkan / Sembunyikan" style="padding: 0 10px; height: 38px;">
                     👁️
                   </button>
+                  <button type="button" class="btn btn-secondary btn-sm" id="btn-sync-models" title="Tarik daftar model dari akun API Key" style="padding: 0 10px; height: 38px; font-size: 11px; white-space: nowrap; display: inline-flex; align-items: center; gap: 4px;">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
+                    Tarik Model
+                  </button>
                 </div>
                 <div style="font-size: 10.5px; color: var(--text-tertiary); margin-top: 4px;">
-                  Kunci saat ini tersimpan aman. Biarkan kosong jika hanya ingin ganti model.
+                  Kunci saat ini tersimpan aman. Setelah mengisi API Key, klik Tarik Model untuk melihat model akun Anda.
                 </div>
+              </div>
+
+              <!-- 3. Model Selection (Populated dynamically from API / Presets) -->
+              <div class="form-group" style="margin-bottom: 14px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                  <div style="display: flex; align-items: center; gap: 6px;">
+                    <label class="form-label" for="select-ai-model" style="margin-bottom: 0;">3. Model Bahasa Tersedia</label>
+                    <span id="ai-model-status-chip" style="font-size: 10px; font-weight: 500; padding: 1px 6px; border-radius: 4px; background: rgba(255, 255, 255, 0.06); color: var(--text-tertiary);">Memuat...</span>
+                  </div>
+                  <button type="button" id="btn-toggle-custom-model" style="background: none; border: none; font-size: 11px; color: var(--accent-blue); cursor: pointer; padding: 0;">Ketik Manual</button>
+                </div>
+                <select id="select-ai-model" class="form-input" style="font-size: 12.5px;"></select>
+                <input type="text" id="input-custom-model" class="form-input" placeholder="contoh: llama-3.3-70b-versatile" style="display: none; margin-top: 6px; font-size: 12px; font-family: var(--font-mono);" />
               </div>
 
               <!-- Action Buttons: Pre-flight Test & Save -->

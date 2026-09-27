@@ -69,6 +69,19 @@ export const settingsRoutes: FastifyPluginAsync = async (fastify) => {
     return reply.send(testResult);
   });
 
+  // POST /api/settings/ai/models - Dynamically fetch models for provider & key
+  fastify.post('/api/settings/ai/models', async (request, reply) => {
+    const body =
+      (request.body as {
+        provider?: string;
+        apiKey?: string;
+        baseUrl?: string;
+      }) || {};
+
+    const result = await aiService.getAvailableModels(body);
+    return reply.send(result);
+  });
+
   // PUT /api/settings - Update general dynamic settings (botName, prefix, footerText, aiAutoReply, messageDelayMs)
   fastify.put('/api/settings', async (request, reply) => {
     const parse = updateSettingsSchema.safeParse(request.body);
