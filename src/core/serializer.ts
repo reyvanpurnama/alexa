@@ -44,6 +44,9 @@ export interface SerializedMessage {
   reply: (text: string, options?: { withFooter?: boolean }) => Promise<WAMessage | undefined>;
   react: (emoji: string) => Promise<WAMessage | undefined>;
   send: (content: AnyMessageContent) => Promise<WAMessage | undefined>;
+  sendTyping: (active?: boolean) => Promise<void>;
+  markRead: () => Promise<void>;
+  sock: WASocket;
 }
 
 /**
@@ -230,6 +233,20 @@ export async function serializeMessage(sock: WASocket, msg: WAMessage): Promise<
     return await sock.sendMessage(from, content);
   };
 
+  const sendTyping = async (active = true) => {
+    try {
+      await sock.sendPresenceUpdate(active ? 'composing' : 'paused', from);
+    } catch {}
+  };
+
+  const markRead = async () => {
+    try {
+      if (msg.key) {
+        await sock.readMessages([msg.key]);
+      }
+    } catch {}
+  };
+
   return {
     raw: msg,
     id,
@@ -254,5 +271,8 @@ export async function serializeMessage(sock: WASocket, msg: WAMessage): Promise<
     reply,
     react,
     send,
+    sendTyping,
+    markRead,
+    sock,
   };
 }

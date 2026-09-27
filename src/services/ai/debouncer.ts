@@ -3,6 +3,8 @@ import { aiService } from './index.js';
 import { takeoverManager } from './takeover.js';
 import { logger } from '../../utils/logger.js';
 
+import { config } from '../../config/index.js';
+
 interface BufferedSession {
   messages: string[];
   timer: NodeJS.Timeout;
@@ -24,6 +26,10 @@ export class MessageDebouncer {
    */
   enqueue(m: SerializedMessage, text: string): void {
     const userId = m.senderNumber;
+
+    // Immediately mark message as read and start typing presence (Apple HIG Instant Feedback)
+    m.markRead().catch(() => {});
+    m.sendTyping(true).catch(() => {});
 
     const existing = this.buffers.get(userId);
     if (existing) {
@@ -63,6 +69,7 @@ export class MessageDebouncer {
 
     // Double check takeover / mute state before sending
     if (takeoverManager.isMuted(userId) || takeoverManager.isMuted(session.lastMessage.from)) {
+      session.lastMessage.sendTyping(false).catch(() => {});
       return;
     }
 
@@ -71,16 +78,52 @@ export class MessageDebouncer {
       `[Debouncer] Processing ${session.messages.length} aggregated message(s) from ${userId}`
     );
 
+    // Start Persistent Typing Indicator Heartbeat (Refreshed every 4s to counter WhatsApp timeout)
+    await session.lastMessage.sendTyping(true);
+    const typingHeartbeat = setInterval(() => {
+      session.lastMessage.sendTyping(true).catch(() => {});
+    }, 4000);
+
     try {
       const response = await aiService.generateResponse(combinedPrompt, {
         sessionId: userId,
       });
 
+      clearInterval(typingHeartbeat);
+      await session.lastMessage.sendTyping(false);
+
       if (response) {
         await session.lastMessage.reply(response);
       }
-    } catch (error) {
+    } catch (error: any) {
+      clearInterval(typingHeartbeat);
+      await session.lastMessage.sendTyping(false);
+
       logger.error({ error, userId }, 'Error generating AI response for debounced messages');
+
+      const isRateLimit =
+        error?.status === 429 ||
+        error?.code === 'rate_limit_exceeded' ||
+        String(error?.message || '').toLowerCase().includes('rate limit');
+      const isOwner = config.OWNER_NUMBERS.includes(userId);
+
+      const fallbackLines: string[] = [
+        isRateLimit ? '*Antrean Layanan Sedang Penuh*' : '*Kendala Sistem Sementara*',
+        '',
+        isRateLimit
+          ? 'Layanan asisten AI sedang mencapai batas antrean sesaat. Mohon tunggu 1–2 menit, atau gunakan bantuan langsung di bawah ini:'
+          : 'Asisten AI mengalami kendala teknis sementara. Untuk bantuan langsung, silakan gunakan perintah:',
+        '',
+        '• `/menu` — Daftar perintah sistem',
+        '• `/human` — Hubungkan langsung ke staf/admin',
+      ];
+
+      if (isOwner) {
+        fallbackLines.push('');
+        fallbackLines.push(`_Catatan teknis administrator: ${error?.message || 'Batas kuota/antrean API tercapai'}._`);
+      }
+
+      await session.lastMessage.reply(fallbackLines.join('\n')).catch(() => {});
     }
   }
 
@@ -91,6 +134,7 @@ export class MessageDebouncer {
     const session = this.buffers.get(userId);
     if (session) {
       clearTimeout(session.timer);
+      session.lastMessage.sendTyping(false).catch(() => {});
       this.buffers.delete(userId);
     }
   }

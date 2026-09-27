@@ -22,6 +22,9 @@ export async function handleIncomingMessage(sock: WASocket, rawMsg: WAMessage): 
   const m = await serializeMessage(sock, rawMsg);
   if (!m) return;
 
+  // Immediate Double Blue Tick (Apple HIG Immediate Confirmation)
+  m.markRead().catch(() => {});
+
   // If owner manually replied from their phone in a private chat, auto-snooze AI for 30m
   if (m.fromMe) {
     if (!m.isGroup && m.from) {

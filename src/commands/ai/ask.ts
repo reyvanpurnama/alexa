@@ -14,11 +14,21 @@ const askCommand: Command = {
       return;
     }
 
+    m.markRead().catch(() => {});
+    m.sendTyping(true).catch(() => {});
+    const typingHeartbeat = setInterval(() => {
+      m.sendTyping(true).catch(() => {});
+    }, 4000);
+
     try {
       const sessionId = m.isGroup ? `${m.from}:${m.senderNumber}` : m.senderNumber;
       const answer = await aiService.generateResponse(question, { sessionId });
+      clearInterval(typingHeartbeat);
+      await m.sendTyping(false);
       await m.reply(answer);
     } catch (error) {
+      clearInterval(typingHeartbeat);
+      await m.sendTyping(false);
       logger.error({ error }, 'Error generating AI response');
       await m.reply('AI service is currently unavailable. Please ensure AI_API_KEY is configured.');
     }
