@@ -23,10 +23,18 @@ class AIService {
   async generateResponse(prompt: string, options?: AIOptions): Promise<string> {
     const provider = config.AI_PROVIDER;
     const baseSystemPrompt = options?.systemPrompt || config.AI_SYSTEM_PROMPT;
+    const isOwner = Boolean(
+      options?.sessionId && config.OWNER_NUMBERS.includes(options.sessionId)
+    );
     const knowledgeContext = knowledgeManager.getKnowledgeContext();
-    const systemPrompt = knowledgeContext
+    let systemPrompt = knowledgeContext
       ? `${baseSystemPrompt}\n\n${knowledgeContext}`
       : baseSystemPrompt;
+
+    if (isOwner) {
+      systemPrompt += `\n\n[USER RECOGNITION — OWNER / PENGURUS KOPERASI]: Pengguna ini adalah OWNER / PENGURUS Koperasi Bermadani (Nomor: +${options?.sessionId}). Anda mengenali beliau sebagai pemilik/pengurus Koperasi Bermadani. Anda DIIZINKAN memberikan ringkasan data supplier, laporan keuangan, status operasional, dan statistik katalog secara terbuka dan transparan kepada beliau jika diminta. Sapa dengan hangat dan sopan sebagai pengurus.`;
+    }
+
     const history = options?.sessionId ? conversationMemory.getHistory(options.sessionId) : [];
 
     let response = '';

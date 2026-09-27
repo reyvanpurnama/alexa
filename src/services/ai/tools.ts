@@ -73,13 +73,13 @@ export const aiTools: OpenAI.Chat.Completions.ChatCompletionTool[] = [
     function: {
       name: 'check_product_stock',
       description:
-        'Cek ketersediaan stok, harga jual aktif, satuan, dan kategori produk real-time dari database toko Koperasi Bermadani. Panggil tool ini setiap kali pelanggan atau supplier menanyakan stok produk (misal: "Ada Indomie?", "Berapa harga kopi?", "Cek stok roti"). Jangan pernah mengarang stok atau harga.',
+        'Cek ketersediaan stok, harga jual aktif, satuan, dan aneka kategori produk real-time dari database toko Koperasi Bermadani. Panggil tool ini setiap kali pelanggan atau pengurus menanyakan produk (misal: "Ada Indomie?", "Ada produk apa aja?", "Daftar produk", "Cek stok kopi"). Untuk melihat katalog umum atau semua produk, gunakan query kosong "" atau "semua". Jangan pernah mengarang stok atau harga.',
       parameters: {
         type: 'object',
         properties: {
           query: {
             type: 'string',
-            description: 'Nama produk atau kata kunci pencarian (misal: "Indomie", "Aqua", "Roti", "Susu").',
+            description: 'Nama produk, barcode, kategori, atau kosongkan / "semua" untuk melihat katalog umum.',
           },
         },
         required: ['query'],
@@ -130,6 +130,18 @@ export const aiTools: OpenAI.Chat.Completions.ChatCompletionTool[] = [
             description: 'Nomor anggota (misal: "MBR-xxx") atau nomor HP penanya.',
           },
         },
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'get_owner_cooperative_overview',
+      description:
+        'Khusus Owner / Pengurus Koperasi: Mengambil ringkasan statistik komprehensif manajemen koperasi, daftar mitra supplier aktif, total jenis produk aktif, produk menipis (low stock), dan omzet transaksi hari ini. Panggil tool ini saat owner/pengurus menanyakan data supplier, performa toko, atau ringkasan manajemen koperasi.',
+      parameters: {
+        type: 'object',
+        properties: {},
       },
     },
   },
@@ -197,7 +209,7 @@ export async function executeTool(
 
     case 'check_product_stock': {
       const query = String(args.query || '').trim();
-      const result = await fetchFromLaravel('/api/bot/products', { q: query });
+      const result = await fetchFromLaravel('/api/bot/products', { q: query, limit: '25' });
       return JSON.stringify(result);
     }
 
@@ -229,6 +241,19 @@ export async function executeTool(
         });
       }
       const result = await fetchFromLaravel('/api/bot/member-status', { identifier });
+      return JSON.stringify(result);
+    }
+
+    case 'get_owner_cooperative_overview': {
+      const senderPhone = context.senderNumber || context.sessionId || '';
+      const isOwner = config.OWNER_NUMBERS.includes(senderPhone);
+      if (!isOwner) {
+        return JSON.stringify({
+          success: false,
+          error: 'Akses ditolak: Data manajemen koperasi hanya dapat diakses oleh nomor Owner / Pengurus terdaftar.',
+        });
+      }
+      const result = await fetchFromLaravel('/api/bot/owner-summary');
       return JSON.stringify(result);
     }
 
