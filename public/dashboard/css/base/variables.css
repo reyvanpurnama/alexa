@@ -1,0 +1,26 @@
+/* ==========================================================================
+   Design Tokens — Apple HIG Dark Mode Color System
+   ========================================================================== */
+
+:root {
+  --bg-canvas: #000000;
+  --bg-surface: #141416;
+  --bg-surface-elevated: #1e1e22;
+  --bg-surface-hover: #26262c;
+  --border-subtle: rgba(255, 255, 255, 0.08);
+  --border-strong: rgba(255, 255, 255, 0.16);
+  --text-primary: #f5f5f7;
+  --text-secondary: #86868b;
+  --text-tertiary: #545458;
+  --accent-blue: #0071e3;
+  --accent-blue-hover: #0077ed;
+  --accent-green: #30d158;
+  --accent-amber: #ff9f0a;
+  --accent-red: #ff453a;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-pill: 9999px;
+  --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Segoe UI", Roboto, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", Menlo, monospace;
+}

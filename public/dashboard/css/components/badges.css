@@ -1,0 +1,201 @@
+/* ==========================================================================
+   Badges, Status Pills & Chips
+   ========================================================================== */
+
+/* Generic Badge */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  font-weight: 500;
+  padding: 3px 8px;
+  border-radius: var(--radius-pill);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.2;
+}
+
+.badge-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+}
+
+.badge-connected {
+  background: rgba(48, 209, 88, 0.12);
+  color: var(--accent-green);
+  border: 1px solid rgba(48, 209, 88, 0.25);
+}
+.badge-connected .badge-dot { background: var(--accent-green); }
+
+.badge-waiting {
+  background: rgba(255, 159, 10, 0.12);
+  color: var(--accent-amber);
+  border: 1px solid rgba(255, 159, 10, 0.25);
+}
+.badge-waiting .badge-dot { background: var(--accent-amber); }
+
+.badge-saved {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-subtle);
+}
+.badge-saved .badge-dot { background: var(--text-tertiary); }
+
+.badge-empty {
+  background: transparent;
+  color: var(--text-tertiary);
+  border: 1px dashed var(--border-subtle);
+}
+
+/* Delivery Receipt Status Pills */
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 12px;
+  font-family: var(--font-mono);
+}
+
+.status-pill.queued {
+  background: rgba(255, 159, 10, 0.15);
+  color: var(--accent-orange);
+  border: 1px solid rgba(255, 159, 10, 0.3);
+}
+
+.status-pill.sent {
+  background: rgba(10, 132, 255, 0.15);
+  color: var(--accent-blue);
+  border: 1px solid rgba(10, 132, 255, 0.3);
+}
+
+.status-pill.delivered {
+  background: rgba(48, 209, 88, 0.15);
+  color: var(--accent-green);
+  border: 1px solid rgba(48, 209, 88, 0.3);
+}
+
+.status-pill.read {
+  background: rgba(191, 90, 242, 0.15);
+  color: #bf5af2;
+  border: 1px solid rgba(191, 90, 242, 0.3);
+}
+
+.status-pill.failed {
+  background: rgba(255, 69, 58, 0.15);
+  color: var(--accent-red);
+  border: 1px solid rgba(255, 69, 58, 0.3);
+}
+
+/* Chat Stream Pills */
+.chat-pill {
+  font-size: 10px;
+  padding: 2px 7px;
+  border-radius: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.chat-pill.replied {
+  background: rgba(48, 209, 88, 0.12);
+  color: #30d158;
+  border: 1px solid rgba(48, 209, 88, 0.25);
+}
+
+.chat-pill.error {
+  background: rgba(255, 69, 58, 0.12);
+  color: #ff453a;
+  border: 1px solid rgba(255, 69, 58, 0.25);
+}
+
+.chat-pill.muted {
+  background: rgba(255, 159, 10, 0.12);
+  color: #ff9f0a;
+  border: 1px solid rgba(255, 159, 10, 0.25);
+}
+
+.chat-pill.command {
+  background: rgba(10, 132, 255, 0.12);
+  color: #0a84ff;
+  border: 1px solid rgba(10, 132, 255, 0.25);
+}
+
+/* AI Chips */
+.ai-chips-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.ai-chip {
+  background: var(--bg-surface-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
+  padding: 4px 10px;
+  font-size: 11px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  user-select: none;
+}
+
+.ai-chip:hover {
+  color: var(--text-primary);
+  border-color: var(--accent-blue);
+  background: rgba(10, 132, 255, 0.1);
+}
+
+.ai-stat-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  font-family: var(--font-mono);
+  color: var(--text-secondary);
+  background: var(--bg-surface-elevated);
+  border: 1px solid var(--border-subtle);
+  padding: 4px 10px;
+  border-radius: var(--radius-sm);
+}
+
+.ai-latency-pill {
+  font-size: 11px;
+  font-family: var(--font-mono);
+  color: var(--accent-green);
+  background: rgba(48, 209, 88, 0.12);
+  border: 1px solid rgba(48, 209, 88, 0.25);
+  padding: 2px 8px;
+  border-radius: 10px;
+}
+
+/* FAQ Badges */
+.faq-q-badge {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: rgba(10, 132, 255, 0.15);
+  color: var(--accent-blue);
+  letter-spacing: 0.5px;
+}
+
+.faq-topic-tag {
+  font-size: 10px;
+  padding: 2px 7px;
+  border-radius: 10px;
+  background: #27272a;
+  color: var(--text-tertiary);
+  font-family: var(--font-mono);
+}
+
+/* AI Model Status Chip */
+#ai-model-status-chip {
+  font-family: var(--font-sans);
+  letter-spacing: -0.01em;
+  transition: all 0.2s ease;
+}

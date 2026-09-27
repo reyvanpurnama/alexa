@@ -1,0 +1,141 @@
+/* ==========================================================================
+   Forms — Inputs, Selects, Textarea, Badges, Pacing, Slider
+   ========================================================================== */
+
+.form-group {
+  margin-bottom: 14px;
+}
+
+.form-label {
+  display: block;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  margin-bottom: 6px;
+}
+
+.form-input, .form-textarea {
+  width: 100%;
+  background: var(--bg-surface-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  font-size: 13px;
+  padding: 10px 12px;
+  outline: none;
+  transition: border-color 0.15s ease;
+}
+
+.form-textarea {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  resize: vertical;
+  line-height: 1.6;
+}
+
+.form-input:focus, .form-textarea:focus {
+  border-color: var(--accent-blue);
+}
+
+/* Pacing Controls */
+.pacing-group {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 14px;
+}
+
+.pacing-btn {
+  flex: 1;
+  padding: 8px 6px;
+  font-size: 12px;
+  font-weight: 500;
+  background: var(--bg-surface-elevated);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  text-align: center;
+  transition: all 0.15s ease;
+}
+
+.pacing-btn.active {
+  background: rgba(0, 113, 227, 0.14);
+  border-color: var(--accent-blue);
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+/* Custom Apple Range Slider */
+.apple-slider-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+
+.apple-slider-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.apple-slider-val-badge {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--accent-blue);
+  background: rgba(10, 132, 255, 0.12);
+  border: 1px solid rgba(10, 132, 255, 0.25);
+  padding: 2px 8px;
+  border-radius: var(--radius-pill);
+}
+
+.apple-range-input {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 6px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.12);
+  outline: none;
+  transition: background 0.15s ease;
+  cursor: pointer;
+}
+
+.apple-range-input:hover {
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.apple-range-input::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #ffffff;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(0, 0, 0, 0.1);
+  cursor: grab;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.apple-range-input::-webkit-slider-thumb:hover {
+  transform: scale(1.1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(0, 0, 0, 0.2);
+}
+
+.apple-range-input::-webkit-slider-thumb:active {
+  cursor: grabbing;
+  transform: scale(1.15);
+  box-shadow: 0 0 0 4px rgba(0, 113, 227, 0.3);
+}
+
+.apple-range-input::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #ffffff;
+  border: none;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+  cursor: grab;
+}

@@ -1,0 +1,30 @@
+/* ==========================================================================
+   Tables — Apple Inset Styled
+   ========================================================================== */
+
+.apple-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 13px;
+}
+
+.apple-table th {
+  padding: 10px 12px;
+  color: var(--text-tertiary);
+  font-weight: 500;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.apple-table td {
+  padding: 12px;
+  border-bottom: 1px solid var(--border-subtle);
+  color: var(--text-primary);
+}
+
+.apple-table tr:last-child td {
+  border-bottom: none;
+}

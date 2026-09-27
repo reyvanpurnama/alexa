@@ -1,0 +1,64 @@
+/* ==========================================================================
+   Global Reset, Typography & Scrollbar
+   ========================================================================== */
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background-color: var(--bg-canvas);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  min-height: 100vh;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  padding: 24px 16px 80px;
+}
+
+.container {
+  max-width: 1080px;
+  margin: 0 auto;
+}
+
+/* Tab View Transitions */
+.tab-view {
+  display: none;
+}
+
+.tab-view.active {
+  display: block;
+  animation: tab-fade 0.15s ease;
+}
+
+@keyframes tab-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* Sub-Tab Views */
+.sub-tab-view {
+  display: none;
+}
+
+.sub-tab-view.active {
+  display: block;
+}
+
+/* Shared Scrollbar */
+::-webkit-scrollbar {
+  width: 5px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border-subtle);
+  border-radius: 4px;
+}
+
+/* Spin Keyframe */
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}

@@ -1,0 +1,31 @@
+/* ==========================================================================
+   Broadcast Tab — Campaign Form, Pacing Monitor
+   ========================================================================== */
+
+/* (Pacing group already in forms.css — broadcast-specific overrides below) */
+
+/* Delivery receipt table row status within broadcast view */
+.broadcast-progress-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border-subtle);
+  font-size: 13px;
+}
+
+.broadcast-progress-row:last-child {
+  border-bottom: none;
+}
+
+.broadcast-stat-label {
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.broadcast-stat-value {
+  font-family: var(--font-mono);
+  font-weight: 600;
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+}
