@@ -11,7 +11,7 @@ const humanCommand: Command = {
   category: 'general',
   execute: async ({ m, sock, text }) => {
     // Mute AI auto-reply for 60 minutes so human agent can handle
-    takeoverManager.mute(m.senderNumber, 60, 'customer_manual_command');
+    takeoverManager.mute(m.senderNumber, 60, 'customer_manual_command', m.pushName);
 
     dispatchWebhook('support.requested', {
       from: m.from,

@@ -11,7 +11,7 @@ const muteCommand: Command = {
     const minutes = parseInt(args[0] || '30', 10);
     const validMinutes = isNaN(minutes) || minutes <= 0 ? 30 : minutes;
 
-    takeoverManager.mute(m.from, validMinutes, 'owner_command_mute');
+    takeoverManager.mute(m.from, validMinutes, 'owner_command_mute', m.pushName);
     await m.reply(`AI auto-reply muted for this chat for ${validMinutes} minutes.`);
   },
 };

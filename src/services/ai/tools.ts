@@ -10,6 +10,7 @@ import { localStore } from '../../core/store/localStore.js';
 export interface ToolExecutionContext {
   sessionId?: string;
   senderNumber?: string;
+  senderName?: string;
 }
 
 export const aiTools: OpenAI.Chat.Completions.ChatCompletionTool[] = [
@@ -115,17 +116,18 @@ export async function executeTool(
 
       // Mute AI auto-reply for 60 minutes
       if (targetNumber !== 'unknown') {
-        takeoverManager.mute(targetNumber, 60, reason);
+        takeoverManager.mute(targetNumber, 60, reason, context.senderName);
       }
 
       // Dispatch webhook event to notify external CRM or notification system
       dispatchWebhook('support.requested', {
         senderNumber: targetNumber,
+        senderName: context.senderName,
         reason,
         timestamp: Math.floor(Date.now() / 1000),
       }).catch(() => {});
 
-      logger.warn(`[Handover] Human agent requested by ${targetNumber}. Reason: ${reason}`);
+      logger.warn(`[Handover] Human agent requested by ${targetNumber} (${context.senderName || 'Unknown'}). Reason: ${reason}`);
 
       // Dispatch real-time WhatsApp alert to business owners
       const timeStr = new Intl.DateTimeFormat('id-ID', {
@@ -136,7 +138,7 @@ export async function executeTool(
 
       const alertText = [
         `[Eskalasi Admin Diperlukan]`,
-        `Pelanggan: +${targetNumber}`,
+        `Pelanggan: +${targetNumber} (${context.senderName || 'Pelanggan'})`,
         `Waktu: ${timeStr} WIB`,
         `Pemicu: Asisten AI (Intent Detection)`,
         `Alasan: "${reason}"`,

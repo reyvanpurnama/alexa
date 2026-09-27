@@ -1417,8 +1417,8 @@ input:checked + .slider:before {
 }
 
 .takeover-avatar {
-  width: 32px;
-  height: 32px;
+  width: 34px;
+  height: 34px;
   border-radius: 50%;
   background: rgba(255, 159, 10, 0.15);
   color: #ff9f0a;
@@ -1426,8 +1426,9 @@ input:checked + .slider:before {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 13px;
+  font-size: 12.5px;
   font-weight: 600;
+  flex-shrink: 0;
 }
 
 .takeover-info {
@@ -1436,11 +1437,25 @@ input:checked + .slider:before {
   gap: 2px;
 }
 
-.takeover-phone {
-  font-family: var(--font-mono);
+.takeover-header-line {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.takeover-name {
   font-weight: 600;
   color: var(--text-primary);
   font-size: 13px;
+  letter-spacing: -0.01em;
+}
+
+.takeover-phone {
+  font-family: var(--font-mono);
+  font-weight: 500;
+  color: var(--text-tertiary);
+  font-size: 11px;
 }
 
 .takeover-meta-row {

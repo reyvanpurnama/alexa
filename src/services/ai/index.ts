@@ -15,6 +15,7 @@ export interface AIOptions {
   systemPrompt?: string;
   maxTokens?: number;
   sessionId?: string;
+  senderName?: string;
 }
 
 export interface AIResponseResult {
@@ -63,7 +64,7 @@ class AIService {
       if (provider === 'gemini') {
         replyText = await this.generateGemini(testPrompt, '', [], apiKey, model);
       } else {
-        const res = await this.generateOpenAICompatible(testPrompt, '', provider, [], undefined, {
+        const res = await this.generateOpenAICompatible(testPrompt, '', provider, [], undefined, undefined, {
           apiKey,
           model,
           baseUrl,
@@ -135,7 +136,8 @@ This user is an AUTHENTICATED OWNER/ADMIN of the system (+${options?.sessionId})
           systemPrompt,
           provider,
           history,
-          options?.sessionId
+          options?.sessionId,
+          options?.senderName
         );
         responseText = result.text;
         usedTools = result.usedTools;
@@ -219,6 +221,7 @@ This user is an AUTHENTICATED OWNER/ADMIN of the system (+${options?.sessionId})
     provider: 'openai' | 'groq' | 'deepseek' | 'ollama' | 'custom',
     history: ChatMessage[],
     sessionId?: string,
+    senderName?: string,
     override?: { apiKey?: string; model?: string; baseUrl?: string }
   ): Promise<{ text: string; usedTools: boolean }> {
     const aiConfig = this.getActiveConfig();
@@ -358,6 +361,7 @@ This user is an AUTHENTICATED OWNER/ADMIN of the system (+${options?.sessionId})
           const result = await executeTool(toolCall.function.name, parsedArgs, {
             sessionId,
             senderNumber: sessionId,
+            senderName,
           });
 
           messages.push({

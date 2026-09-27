@@ -45,8 +45,13 @@ export const takeoverRoutes: FastifyPluginAsync = async (fastify) => {
 
   // POST /api/takeover/mute - Manually mute a specific number from dashboard
   fastify.post('/api/takeover/mute', async (request, reply) => {
-    const { targetId, durationMinutes = 30, reason = 'dashboard_manual_mute' } =
-      (request.body as { targetId?: string; durationMinutes?: number; reason?: string }) || {};
+    const { targetId, durationMinutes = 30, reason = 'dashboard_manual_mute', senderName } =
+      (request.body as {
+        targetId?: string;
+        durationMinutes?: number;
+        reason?: string;
+        senderName?: string;
+      }) || {};
 
     if (!targetId || !targetId.trim()) {
       return reply.code(400).send({
@@ -55,7 +60,7 @@ export const takeoverRoutes: FastifyPluginAsync = async (fastify) => {
       });
     }
 
-    takeoverManager.mute(targetId.trim(), durationMinutes, reason);
+    takeoverManager.mute(targetId.trim(), durationMinutes, reason, senderName);
 
     return reply.send({
       success: true,

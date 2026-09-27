@@ -29,6 +29,41 @@ function formatChatTime(isoString) {
   );
 }
 
+function formatPhoneNumberDisplay(raw) {
+  if (!raw) return '';
+  let clean = String(raw).replace(/@s\.whatsapp\.net|@lid|@g\.us/g, '').replace(/\D/g, '');
+  if (clean.startsWith('0')) {
+    clean = '62' + clean.slice(1);
+  }
+  if (clean.startsWith('628')) {
+    const prefix = clean.slice(0, 5);
+    const p1 = `+${prefix.slice(0, 2)} ${prefix.slice(2)}`;
+    const rest = clean.slice(5);
+    if (rest.length <= 4) return `${p1}-${rest}`;
+    if (rest.length <= 7) return `${p1}-${rest.slice(0, 3)}-${rest.slice(3)}`;
+    return `${p1}-${rest.slice(0, 4)}-${rest.slice(4)}`;
+  }
+  if (clean.startsWith('62') && clean.length >= 9) {
+    const area = clean.slice(0, 4);
+    const rest = clean.slice(4);
+    return `+${area.slice(0, 2)} ${area.slice(2)}-${rest.slice(0, 4)}-${rest.slice(4)}`;
+  }
+  return clean ? `+${clean}` : String(raw);
+}
+
+function getInitials(name, fallback = '👤') {
+  if (!name) return fallback;
+  const cleaned = name.trim();
+  if (/^[\d+\s\-()]+$/.test(cleaned)) {
+    return '👤';
+  }
+  const parts = cleaned.split(/\s+/).filter(Boolean);
+  if (parts.length >= 2) {
+    return (parts[0][0] + parts[1][0]).toUpperCase();
+  }
+  return cleaned.slice(0, 2).toUpperCase();
+}
+
 export function initOverview() {
   const btnSend = document.getElementById('btn-quick-send');
   if (btnSend) {
@@ -236,13 +271,23 @@ export async function fetchTakeoverStatus(isSilent = false) {
       <div class="takeover-list">
         ${sessions
           .map((s) => {
-            const avatarLetter = (s.phone || 'W').replace(/\D/g, '').slice(-2);
+            const formattedPhone = s.formattedPhone || formatPhoneNumberDisplay(s.phone || s.id);
+            const rawId = s.id ? s.id.replace(/\D/g, '') : '';
+            const displayName =
+              s.senderName && s.senderName !== s.phone && s.senderName !== rawId
+                ? s.senderName
+                : formattedPhone;
+            const avatarText = getInitials(s.senderName);
+
             return `
               <div class="takeover-card-item">
                 <div class="takeover-identity">
-                  <div class="takeover-avatar">${avatarLetter}</div>
+                  <div class="takeover-avatar" title="${escapeHtml(displayName)}">${escapeHtml(avatarText)}</div>
                   <div class="takeover-info">
-                    <span class="takeover-phone">${escapeHtml(s.phone)}</span>
+                    <div class="takeover-header-line">
+                      <span class="takeover-name">${escapeHtml(displayName)}</span>
+                      <span class="takeover-phone">${escapeHtml(formattedPhone)}</span>
+                    </div>
                     <div class="takeover-meta-row">
                       <span class="takeover-reason-tag">${escapeHtml(s.reasonLabel)}</span>
                       <span class="takeover-countdown">⏳ Sisa ${s.remainingMinutes} mnt lagi</span>
@@ -346,7 +391,7 @@ export async function fetchRecentChats(isSilent = false) {
           pillLabel = 'Perintah';
         }
 
-        const senderFormatted = chat.senderNumber ? `+${chat.senderNumber}` : 'Pengguna';
+        const senderFormatted = formatPhoneNumberDisplay(chat.senderNumber) || 'Pengguna';
         const nameFormatted =
           chat.senderName && chat.senderName !== chat.senderNumber
             ? `${escapeHtml(chat.senderName)}`

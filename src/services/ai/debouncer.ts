@@ -89,6 +89,7 @@ export class MessageDebouncer {
     try {
       const result = await aiService.generateResponse(combinedPrompt, {
         sessionId: userId,
+        senderName: session.lastMessage.pushName || userId,
       });
       const response = result.text;
       const withFooter = result.withFooter;

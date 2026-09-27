@@ -91,8 +91,8 @@ export async function handleIncomingMessage(sock: WASocket, rawMsg: WAMessage): 
       await alertService.forwardToOwners(rawMsg, alertHeader, sock);
 
       // Auto-mute AI for 60m so human admin can verify & confirm order
-      takeoverManager.mute(m.from, 60, 'payment_verification');
-      takeoverManager.mute(m.senderNumber, 60, 'payment_verification');
+      takeoverManager.mute(m.from, 60, 'payment_verification', m.pushName);
+      takeoverManager.mute(m.senderNumber, 60, 'payment_verification', m.pushName);
 
       // Dispatch webhook
       dispatchWebhook('payment.received', {
