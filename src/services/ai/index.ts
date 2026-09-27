@@ -170,7 +170,7 @@ class AIService {
 
     const supportsTools = provider === 'groq' || provider === 'openai';
 
-    const completion = await client.chat.completions.create({
+    let currentCompletion = await client.chat.completions.create({
       model,
       messages,
       temperature: 0.7,
@@ -178,11 +178,18 @@ class AIService {
       tool_choice: supportsTools ? 'auto' : undefined,
     });
 
-    const choice = completion.choices[0]?.message;
-    if (!choice) return '';
+    let iterations = 0;
+    const maxIterations = 3;
 
-    // Handle Function / Tool calling if requested by model
-    if (choice.tool_calls && choice.tool_calls.length > 0) {
+    while (iterations < maxIterations) {
+      const choice = currentCompletion.choices[0]?.message;
+      if (!choice) break;
+
+      // If model provided final text response without new tool calls, return it
+      if (!choice.tool_calls || choice.tool_calls.length === 0) {
+        return choice.content?.trim() || '';
+      }
+
       messages.push(choice);
 
       for (const toolCall of choice.tool_calls) {
@@ -205,17 +212,19 @@ class AIService {
         }
       }
 
-      // Execute secondary completion with tool output
-      const followUp = await client.chat.completions.create({
+      iterations++;
+
+      // Next iteration allows model to either call another tool or produce final answer
+      currentCompletion = await client.chat.completions.create({
         model,
         messages,
         temperature: 0.7,
+        tools: supportsTools && iterations < maxIterations ? aiTools : undefined,
+        tool_choice: supportsTools && iterations < maxIterations ? 'auto' : 'none',
       });
-
-      return followUp.choices[0]?.message?.content?.trim() || '';
     }
 
-    return choice.content?.trim() || '';
+    return currentCompletion.choices[0]?.message?.content?.trim() || '';
   }
 }
 
