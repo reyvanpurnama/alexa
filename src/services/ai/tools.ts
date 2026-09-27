@@ -11,6 +11,51 @@ export interface ToolExecutionContext {
   senderNumber?: string;
 }
 
+const LARAVEL_API_URL = process.env.LARAVEL_API_URL || 'https://bermadaniumbandung.id';
+const BOT_API_KEY = process.env.API_KEY || config.API_KEY || 'wa_secret_token_12345';
+
+/**
+ * Helper to call Laravel internal Bot API with x-api-key authentication
+ */
+async function fetchFromLaravel(path: string, params?: Record<string, string>): Promise<any> {
+  const url = new URL(path, LARAVEL_API_URL);
+  if (params) {
+    for (const [key, value] of Object.entries(params)) {
+      if (value !== undefined && value !== null && value !== '') {
+        url.searchParams.set(key, value);
+      }
+    }
+  }
+
+  try {
+    const res = await fetch(url.toString(), {
+      method: 'GET',
+      headers: {
+        'x-api-key': BOT_API_KEY,
+        Accept: 'application/json',
+      },
+    });
+
+    if (!res.ok) {
+      const errorText = await res.text().catch(() => '');
+      logger.warn({ status: res.status, errorText, path }, '[Laravel API] Request failed');
+      return {
+        success: false,
+        status: res.status,
+        message: `Gagal mengakses data koperasi (HTTP ${res.status}).`,
+      };
+    }
+
+    return await res.json();
+  } catch (err: any) {
+    logger.error({ err, path }, '[Laravel API] Connection error');
+    return {
+      success: false,
+      message: 'Tidak dapat terhubung ke server database Koperasi Bermadani.',
+    };
+  }
+}
+
 export const aiTools: OpenAI.Chat.Completions.ChatCompletionTool[] = [
   {
     type: 'function',
@@ -26,9 +71,74 @@ export const aiTools: OpenAI.Chat.Completions.ChatCompletionTool[] = [
   {
     type: 'function',
     function: {
+      name: 'check_product_stock',
+      description:
+        'Cek ketersediaan stok, harga jual aktif, satuan, dan kategori produk real-time dari database toko Koperasi Bermadani. Panggil tool ini setiap kali pelanggan atau supplier menanyakan stok produk (misal: "Ada Indomie?", "Berapa harga kopi?", "Cek stok roti"). Jangan pernah mengarang stok atau harga.',
+      parameters: {
+        type: 'object',
+        properties: {
+          query: {
+            type: 'string',
+            description: 'Nama produk atau kata kunci pencarian (misal: "Indomie", "Aqua", "Roti", "Susu").',
+          },
+        },
+        required: ['query'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'get_cooperative_info',
+      description:
+        'Mengambil informasi profil resmi koperasi, jam operasional kasir/toko real-time, rekening bank resmi untuk transfer, info pembayaran QRIS, alamat kampus UMB, dan kebijakan batas omzet konsinyasi. Panggil tool ini saat ada pertanyaan jam buka/tutup, transfer pembayaran, rekening, alamat, atau aturan titipan.',
+      parameters: {
+        type: 'object',
+        properties: {
+          topic: {
+            type: 'string',
+            enum: ['operating_hours', 'bank_accounts', 'address', 'consignment_rules', 'all'],
+            description: 'Topik informasi yang ingin diambil.',
+          },
+        },
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'get_supplier_consignment_status',
+      description:
+        'Mengambil rekapitulasi penjualan produk titipan hari ini, rincian barang terjual, sisa produk, dan saldo bagi hasil yang sudah siap diambil di kasir untuk supplier penanya. Otomatis menggunakan nomor WhatsApp penanya untuk menjaga privasi. Panggil tool ini saat mitra supplier menanyakan hasil penjualan, rekap titipan, atau konfirmasi apakah bagi hasil sudah bisa diambil.',
+      parameters: {
+        type: 'object',
+        properties: {},
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'check_member_status',
+      description:
+        'Verifikasi keaktifan anggota koperasi berdasarkan nomor anggota atau nomor WhatsApp penanya. Panggil tool ini saat ada yang menanyakan status keanggotaan Koperasi Bermadani.',
+      parameters: {
+        type: 'object',
+        properties: {
+          identifier: {
+            type: 'string',
+            description: 'Nomor anggota (misal: "MBR-xxx") atau nomor HP penanya.',
+          },
+        },
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
       name: 'request_human_handover',
       description:
-        'Call this function when the user explicitly requests to speak with a human agent, admin, or customer service representative.',
+        'Call this function when the user explicitly requests to speak with a human agent, admin, or customer service representative, or when there is a serious complaint/dispute.',
       parameters: {
         type: 'object',
         properties: {
@@ -83,6 +193,43 @@ export async function executeTool(
         timezone: 'WIB (UTC+7)',
         currentTime: formatted,
       });
+    }
+
+    case 'check_product_stock': {
+      const query = String(args.query || '').trim();
+      const result = await fetchFromLaravel('/api/bot/products', { q: query });
+      return JSON.stringify(result);
+    }
+
+    case 'get_cooperative_info': {
+      const result = await fetchFromLaravel('/api/bot/settings');
+      return JSON.stringify(result);
+    }
+
+    case 'get_supplier_consignment_status': {
+      const senderPhone = context.senderNumber || context.sessionId || '';
+      if (!senderPhone || senderPhone === 'unknown') {
+        return JSON.stringify({
+          success: false,
+          found: false,
+          message: 'Nomor WhatsApp pengirim tidak terdeteksi untuk memverifikasi data supplier.',
+        });
+      }
+      const result = await fetchFromLaravel('/api/bot/supplier-summary', { phone: senderPhone });
+      return JSON.stringify(result);
+    }
+
+    case 'check_member_status': {
+      const identifier = String(args.identifier || context.senderNumber || '').trim();
+      if (!identifier) {
+        return JSON.stringify({
+          success: false,
+          found: false,
+          message: 'Mohon cantumkan nomor anggota atau nomor WhatsApp yang ingin dicek.',
+        });
+      }
+      const result = await fetchFromLaravel('/api/bot/member-status', { identifier });
+      return JSON.stringify(result);
     }
 
     case 'request_human_handover': {

@@ -133,11 +133,11 @@ export function initBroadcast() {
     fetchBroadcastStatus();
   });
 
-  // Outbound Queue Management Buttons
+  // Outbound Queue Management Buttons (Inside Apple Sheet Modal)
   document.getElementById('btn-queue-pause')?.addEventListener('click', async () => {
     const res = await fetchApi('/api/queue/pause', { method: 'POST' });
     if (res.success) {
-      showToast('Antrean pesan dijeda.');
+      showToast('Antrean pengiriman dijeda.');
       fetchQueueAndMessages();
     }
   });
@@ -145,7 +145,7 @@ export function initBroadcast() {
   document.getElementById('btn-queue-resume')?.addEventListener('click', async () => {
     const res = await fetchApi('/api/queue/resume', { method: 'POST' });
     if (res.success) {
-      showToast('Antrean pesan dilanjutkan.');
+      showToast('Antrean pengiriman dilanjutkan.');
       fetchQueueAndMessages();
     }
   });
@@ -154,19 +154,58 @@ export function initBroadcast() {
     if (!confirm('Kosongkan semua pesan yang belum terkirim di antrean?')) return;
     const res = await fetchApi('/api/queue/clear', { method: 'POST' });
     if (res.success) {
-      showToast('Antrean pesan berhasil dibersihkan.');
+      showToast('Seluruh antrean pesan berhasil dibersihkan.');
       fetchQueueAndMessages();
     }
   });
 
-  // Initial load
+  // Progressive Disclosure: Apple Sheet Modal Trigger & Close
+  const sheetModal = document.getElementById('delivery-sheet-modal');
+  const btnOpenSheet = document.getElementById('btn-open-delivery-sheet');
+  const btnCloseSheet = document.getElementById('btn-close-delivery-sheet');
+
+  if (btnOpenSheet && sheetModal) {
+    btnOpenSheet.addEventListener('click', () => {
+      sheetModal.style.display = 'flex';
+      fetchQueueAndMessages();
+    });
+  }
+
+  if (btnCloseSheet && sheetModal) {
+    btnCloseSheet.addEventListener('click', () => {
+      sheetModal.style.display = 'none';
+    });
+  }
+
+  if (sheetModal) {
+    sheetModal.addEventListener('click', (e) => {
+      if (e.target === sheetModal) {
+        sheetModal.style.display = 'none';
+      }
+    });
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && sheetModal.style.display === 'flex') {
+        sheetModal.style.display = 'none';
+      }
+    });
+  }
+
+  // Initial load & Polling (Gentle 5s interval, guarded by Visibility API)
   fetchQueueAndMessages();
   if (!queueTimer) {
-    queueTimer = setInterval(fetchQueueAndMessages, 4000);
+    queueTimer = setInterval(() => {
+      // "No news is good news": Do not poll when user minimizes or switches tab
+      if (!document.hidden) {
+        fetchQueueAndMessages();
+      }
+    }, 5000);
   }
 }
 
 export async function fetchBroadcastStatus() {
+  if (document.hidden) return;
+
   try {
     const data = await fetchApi('/api/broadcast/status');
     if (!data.success) return;
@@ -215,40 +254,62 @@ export async function fetchBroadcastStatus() {
 }
 
 export async function fetchQueueAndMessages() {
+  if (document.hidden) return;
+
   try {
     const [queueRes, messagesRes] = await Promise.all([
       fetchApi('/api/queue/status'),
-      fetchApi('/api/messages/recent?limit=15'),
+      fetchApi('/api/messages/recent?limit=25'),
     ]);
 
-    // Update Queue Badge and Buttons
-    const badgeEl = document.getElementById('queue-status-badge');
+    // Update Quiet Status Bar Elements
+    const dotEl = document.getElementById('queue-dot');
+    const statusTextEl = document.getElementById('queue-status-text');
+    const countChipEl = document.getElementById('queue-count-chip');
     const btnPause = document.getElementById('btn-queue-pause');
     const btnResume = document.getElementById('btn-queue-resume');
 
-    if (queueRes.success && badgeEl) {
+    if (queueRes.success) {
       const q = queueRes.queue;
+      const pendingCount = q.pending || 0;
+
       if (q.isPaused) {
-        badgeEl.textContent = q.pausedByConnection
-          ? '⚠️ Dijeda (Menunggu WhatsApp Terhubung)'
-          : `⏸️ Dijeda Manual (${q.pending || 0} Antre)`;
-        badgeEl.style.color = 'var(--accent-orange)';
+        if (dotEl) {
+          dotEl.className = 'status-indicator-dot paused';
+        }
+        if (statusTextEl) {
+          statusTextEl.textContent = q.pausedByConnection
+            ? 'Menunggu Sambungan WhatsApp...'
+            : 'Antrean Pengiriman Dijeda';
+        }
+        if (countChipEl) {
+          countChipEl.textContent = `${pendingCount} pesan tertahan`;
+        }
         if (btnPause) btnPause.style.display = 'none';
         if (btnResume) btnResume.style.display = 'inline-flex';
       } else {
-        badgeEl.textContent = `🟢 Antrean Aktif (${q.pending || 0} Antre • Jeda ${q.delayMs / 1000}s)`;
-        badgeEl.style.color = 'var(--accent-green)';
+        if (dotEl) {
+          dotEl.className = 'status-indicator-dot online';
+        }
+        if (statusTextEl) {
+          statusTextEl.textContent =
+            pendingCount > 0 ? 'Sedang Mengirim Pesan Aman...' : 'Sistem Pengiriman Aman Siap';
+        }
+        if (countChipEl) {
+          countChipEl.textContent =
+            pendingCount > 0 ? `${pendingCount} pesan mengantre` : 'Antrean bersih';
+        }
         if (btnPause) btnPause.style.display = 'inline-flex';
         if (btnResume) btnResume.style.display = 'none';
       }
     }
 
-    // Render Recent Messages Table
+    // Render Recent Messages in the Apple Sheet Table
     if (messagesRes.success && messagesRes.messages) {
       renderRecentMessages(messagesRes.messages);
     }
   } catch (err) {
-    // Silent fail for polling
+    // Quiet UI: Fail silently for background polls
   }
 }
 
@@ -259,7 +320,7 @@ function renderRecentMessages(messages) {
   if (!messages || messages.length === 0) {
     tbody.innerHTML = `
       <tr>
-        <td colspan="5" style="text-align: center; color: var(--text-tertiary); padding: 18px;">
+        <td colspan="5" style="text-align: center; color: var(--text-tertiary); padding: 28px;">
           Belum ada riwayat pesan yang dikirim sejak server berjalan.
         </td>
       </tr>
@@ -271,19 +332,19 @@ function renderRecentMessages(messages) {
     .map((msg) => {
       const timeStr = formatTime(msg.queuedAt || msg.sentAt);
       const targetStr = formatPhoneDisplay(msg.to);
-      const refOrId = msg.referenceId
-        ? `<span style="font-weight: 600; color: var(--text-primary);">${escapeHtml(msg.referenceId)}</span> <span style="font-size: 10px; color: var(--text-tertiary); font-family: var(--font-mono); display: block;">${escapeHtml(msg.id)}</span>`
-        : `<span style="font-family: var(--font-mono); color: var(--text-secondary);">${escapeHtml(msg.id)}</span>`;
+      const noteOrId = msg.referenceId
+        ? `<span style="font-weight: 600; color: var(--text-primary);">${escapeHtml(msg.referenceId)}</span>`
+        : `<span style="color: var(--text-tertiary); font-family: var(--font-mono); font-size: 11px;">${escapeHtml(msg.id.substring(0, 16))}...</span>`;
 
-      const typeBadge = `<span style="text-transform: uppercase; font-size: 10px; padding: 2px 6px; border-radius: 4px; background: rgba(255,255,255,0.06); color: var(--text-tertiary);">${msg.type}</span>`;
+      const typeBadge = `<span style="text-transform: uppercase; font-size: 10px; padding: 2px 6px; border-radius: 4px; background: rgba(255,255,255,0.05); color: var(--text-tertiary);">${msg.type}</span>`;
 
       return `
         <tr style="border-bottom: 1px solid var(--border-subtle);">
-          <td style="padding: 10px; color: var(--text-tertiary); font-family: var(--font-mono);">${timeStr}</td>
-          <td style="padding: 10px; font-weight: 500; font-family: var(--font-mono);">${targetStr}</td>
-          <td style="padding: 10px;">${refOrId}</td>
-          <td style="padding: 10px;">${typeBadge}</td>
-          <td style="padding: 10px; text-align: right;">${renderStatusPill(msg.status)}</td>
+          <td style="padding: 10px 12px; color: var(--text-tertiary); font-family: var(--font-mono); font-size: 11px;">${timeStr}</td>
+          <td style="padding: 10px 12px; font-weight: 500; font-family: var(--font-mono);">${targetStr}</td>
+          <td style="padding: 10px 12px;">${noteOrId}</td>
+          <td style="padding: 10px 12px;">${typeBadge}</td>
+          <td style="padding: 10px 12px; text-align: right;">${renderStatusPill(msg.status)}</td>
         </tr>
       `;
     })
@@ -293,13 +354,13 @@ function renderRecentMessages(messages) {
 function renderStatusPill(status) {
   switch (status) {
     case 'queued':
-      return `<span class="status-pill queued">⏳ Dalam Antrean</span>`;
+      return `<span class="status-pill queued">⏳ Mengantre</span>`;
     case 'sent':
-      return `<span class="status-pill sent">✓ Centang 1 (Server)</span>`;
+      return `<span class="status-pill sent">✓ Terkirim ke WhatsApp</span>`;
     case 'delivered':
-      return `<span class="status-pill delivered">✓✓ Centang 2 (Masuk HP)</span>`;
+      return `<span class="status-pill delivered">✓✓ Masuk ke HP Pelanggan</span>`;
     case 'read':
-      return `<span class="status-pill read">✓✓ Dibaca (Centang Biru)</span>`;
+      return `<span class="status-pill read">✓✓ Dibaca Pelanggan</span>`;
     case 'failed':
       return `<span class="status-pill failed">✕ Gagal Kirim</span>`;
     default:
@@ -325,5 +386,6 @@ function escapeHtml(str) {
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
 }

@@ -1,3 +1,15 @@
+/**
+ * @file messageQueue.ts
+ * @description Outbound Anti-Ban Message Queue & Circuit Breaker.
+ *
+ * Architecture Role:
+ * - Anti-Ban Protection: WhatsApp detects robotic burst traffic. This queue forces strict sequential execution
+ *   (concurrency: 1) with base delay (default 2500ms) + random human jitter (0-1000ms).
+ * - Circuit Breaker (Connection Guard): If WhatsApp socket disconnects (reconnecting, internet blip),
+ *   the queue automatically pauses. Pending messages are safely held in memory and resume upon reconnection.
+ * - Non-Blocking Dispatch: Callers get immediate HTTP 202 without blocking their thread.
+ */
+
 import PQueue from 'p-queue';
 import { config } from '../config/index.js';
 import { logger } from '../utils/logger.js';

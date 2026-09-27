@@ -1,3 +1,15 @@
+/**
+ * @file messageTracker.ts
+ * @description Universal Outbound Message Lifecycle Tracker for Alexa WhatsApp Gateway.
+ *
+ * Architecture Role:
+ * - Solves the "Asynchronous Deception" where clients (Laravel, Python, Go) assume HTTP 200 means delivered.
+ * - Tracks every message through 5 sequential states: queued -> sent -> delivered -> read / failed.
+ * - Bridges Baileys socket delivery receipts (messages.update) back to external clients via webhooks or REST.
+ * - Maintains an in-memory LRU ring buffer capped at 5,000 messages to prevent memory leaks in long-running processes.
+ * - Provides bidirectional lookup: WhatsApp message ID <---> Client-supplied referenceId (e.g. invoice/order ID).
+ */
+
 import { generateMessageIDV2 } from '@whiskeysockets/baileys';
 import { dispatchWebhook } from '../../utils/webhook.js';
 import { logger } from '../../utils/logger.js';
