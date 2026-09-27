@@ -1,6 +1,7 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import OpenAI from 'openai';
 import { config } from '../../config/index.js';
+import { settingsManager } from '../../config/settingsManager.js';
 import { conversationMemory, type ChatMessage } from './memory.js';
 import { takeoverManager } from './takeover.js';
 import { messageDebouncer } from './debouncer.js';
@@ -16,12 +17,18 @@ export interface AIOptions {
   sessionId?: string;
 }
 
+export interface AIResponseResult {
+  text: string;
+  withFooter: boolean;
+  usedTools: boolean;
+}
+
 class AIService {
   /**
    * Generates text response using the configured AI provider,
    * grounded with business knowledge base, dynamic SQLite schema, multi-turn memory, and autonomous tool calling.
    */
-  async generateResponse(prompt: string, options?: AIOptions): Promise<string> {
+  async generateResponse(prompt: string, options?: AIOptions): Promise<AIResponseResult> {
     const provider = config.AI_PROVIDER;
     const baseSystemPrompt = options?.systemPrompt || config.AI_SYSTEM_PROMPT;
     const isOwner = Boolean(
@@ -44,38 +51,55 @@ This user is an AUTHENTICATED OWNER/ADMIN of the system (+${options?.sessionId})
     }
 
     const history = options?.sessionId ? conversationMemory.getHistory(options.sessionId) : [];
+    const isFirstMessageInSession = history.length === 0;
 
-    let response = '';
+    let responseText = '';
+    let usedTools = false;
 
     switch (provider) {
       case 'gemini':
-        response = await this.generateGemini(prompt, systemPrompt, history);
+        responseText = await this.generateGemini(prompt, systemPrompt, history);
         break;
 
       case 'openai':
       case 'groq':
       case 'deepseek':
       case 'ollama':
-      case 'custom':
-        response = await this.generateOpenAICompatible(
+      case 'custom': {
+        const result = await this.generateOpenAICompatible(
           prompt,
           systemPrompt,
           provider,
           history,
           options?.sessionId
         );
+        responseText = result.text;
+        usedTools = result.usedTools;
         break;
+      }
 
       default:
         throw new Error(`Unsupported AI provider: ${provider}`);
     }
 
-    if (options?.sessionId && response) {
+    if (options?.sessionId && responseText) {
       conversationMemory.addMessage(options.sessionId, 'user', prompt);
-      conversationMemory.addMessage(options.sessionId, 'assistant', response);
+      conversationMemory.addMessage(options.sessionId, 'assistant', responseText);
     }
 
-    return response;
+    const currentFooter = settingsManager.getSettings().footerText?.trim() || '';
+    const hasFooter = currentFooter.length > 0;
+    const isDataQuery =
+      usedTools ||
+      /(omzet|laba|transaksi|simpanan|pinjaman|anggota|laporan|penjualan|stok|supplier)/i.test(prompt);
+    // Apple HIG Quiet UI: Only attach footer on first interaction in session or comprehensive data queries
+    const withFooter = hasFooter && (isFirstMessageInSession || isDataQuery);
+
+    return {
+      text: responseText,
+      withFooter,
+      usedTools,
+    };
   }
 
   /**
@@ -128,7 +152,7 @@ This user is an AUTHENTICATED OWNER/ADMIN of the system (+${options?.sessionId})
     provider: 'openai' | 'groq' | 'deepseek' | 'ollama' | 'custom',
     history: ChatMessage[],
     sessionId?: string
-  ): Promise<string> {
+  ): Promise<{ text: string; usedTools: boolean }> {
     let baseURL: string | undefined = config.AI_BASE_URL || undefined;
     let apiKey: string = config.AI_API_KEY;
     let defaultModel = 'gpt-4o-mini';
@@ -196,6 +220,7 @@ This user is an AUTHENTICATED OWNER/ADMIN of the system (+${options?.sessionId})
 
     let iterations = 0;
     const maxIterations = 3;
+    let usedTools = false;
 
     while (iterations < maxIterations) {
       const choice = currentCompletion.choices[0]?.message;
@@ -203,13 +228,14 @@ This user is an AUTHENTICATED OWNER/ADMIN of the system (+${options?.sessionId})
 
       // If model provided final text response without new tool calls, return it
       if (!choice.tool_calls || choice.tool_calls.length === 0) {
-        return choice.content?.trim() || '';
+        return { text: choice.content?.trim() || '', usedTools };
       }
 
       messages.push(choice);
 
       for (const toolCall of choice.tool_calls) {
         if (toolCall.type === 'function') {
+          usedTools = true;
           let parsedArgs = {};
           try {
             parsedArgs = JSON.parse(toolCall.function.arguments || '{}');
@@ -240,7 +266,10 @@ This user is an AUTHENTICATED OWNER/ADMIN of the system (+${options?.sessionId})
       });
     }
 
-    return currentCompletion.choices[0]?.message?.content?.trim() || '';
+    return {
+      text: currentCompletion?.choices[0]?.message?.content?.trim() || '',
+      usedTools,
+    };
   }
 }
 

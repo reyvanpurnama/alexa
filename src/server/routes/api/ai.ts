@@ -148,12 +148,14 @@ export const aiRoutes: FastifyPluginAsync = async (fastify) => {
 
     try {
       const startTime = Date.now();
-      const response = await aiService.generateResponse(prompt.trim());
+      const result = await aiService.generateResponse(prompt.trim());
       const latencyMs = Date.now() - startTime;
       return reply.send({
         success: true,
         prompt: prompt.trim(),
-        response,
+        response: result.text,
+        withFooter: result.withFooter,
+        usedTools: result.usedTools,
         latencyMs,
       });
     } catch (err: unknown) {

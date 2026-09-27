@@ -24,12 +24,14 @@ const askCommand: Command = {
     const startTime = Date.now();
     try {
       const sessionId = m.isGroup ? `${m.from}:${m.senderNumber}` : m.senderNumber;
-      const answer = await aiService.generateResponse(question, { sessionId });
+      const result = await aiService.generateResponse(question, { sessionId });
+      const answer = result.text;
+      const withFooter = result.withFooter;
       clearInterval(typingHeartbeat);
       await m.sendTyping(false);
 
       const latencyMs = Date.now() - startTime;
-      logger.info({ sessionId, answer, latencyMs }, '[AI Outbound Response] Sent response to user');
+      logger.info({ sessionId, answer, latencyMs, withFooter }, '[AI Outbound Response] Sent response to user');
 
       chatLogger.log({
         sessionId,
@@ -42,7 +44,7 @@ const askCommand: Command = {
         source: 'command',
       });
 
-      await m.reply(answer);
+      await m.reply(answer, { withFooter });
     } catch (error) {
       clearInterval(typingHeartbeat);
       await m.sendTyping(false);

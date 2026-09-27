@@ -87,9 +87,11 @@ export class MessageDebouncer {
 
     const startTime = Date.now();
     try {
-      const response = await aiService.generateResponse(combinedPrompt, {
+      const result = await aiService.generateResponse(combinedPrompt, {
         sessionId: userId,
       });
+      const response = result.text;
+      const withFooter = result.withFooter;
 
       clearInterval(typingHeartbeat);
       await session.lastMessage.sendTyping(false);
@@ -101,6 +103,7 @@ export class MessageDebouncer {
             userId,
             response,
             latencyMs,
+            withFooter,
           },
           '[AI Outbound Response] Sent response to user'
         );
@@ -116,7 +119,7 @@ export class MessageDebouncer {
           source: 'ai',
         });
 
-        await session.lastMessage.reply(response);
+        await session.lastMessage.reply(response, { withFooter });
       }
     } catch (error: any) {
       clearInterval(typingHeartbeat);
