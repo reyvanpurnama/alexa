@@ -139,7 +139,7 @@ export class LocalStore {
     try {
       const tables = this.db
         .prepare(
-          "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' AND name NOT LIKE '_%';"
+          "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' AND substr(name, 1, 1) != '_';"
         )
         .all() as { name: string }[];
 
@@ -298,7 +298,7 @@ export class LocalStore {
       const mode = this.db.prepare('PRAGMA journal_mode;').get() as { journal_mode: string };
       const tables = this.db
         .prepare(
-          "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' AND name NOT LIKE '_%';"
+          "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' AND substr(name, 1, 1) != '_';"
         )
         .all() as { name: string }[];
 

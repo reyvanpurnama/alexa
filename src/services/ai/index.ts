@@ -136,7 +136,7 @@ This user is an AUTHENTICATED OWNER/ADMIN of the system (+${options?.sessionId})
     switch (provider) {
       case 'groq':
         baseURL = baseURL || 'https://api.groq.com/openai/v1';
-        defaultModel = 'openai/gpt-oss-120b';
+        defaultModel = 'openai/gpt-oss-20b';
         break;
       case 'deepseek':
         baseURL = baseURL || 'https://api.deepseek.com';
