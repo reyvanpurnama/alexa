@@ -103,6 +103,9 @@ function startPairingWatcher(targetSession) {
   if (pairingCheckInterval) clearInterval(pairingCheckInterval);
 
   pairingCheckInterval = setInterval(async () => {
+    // Battery and network guard: Skip network polling when tab is hidden
+    if (document.hidden) return;
+
     try {
       const statusData = await fetchApi('/api/status');
       if (statusData.connected) {

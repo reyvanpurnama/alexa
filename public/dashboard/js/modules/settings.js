@@ -189,14 +189,14 @@ export async function fetchSettings() {
       const isPrimary = idx === 0;
       const roleLabel = isPrimary ? '👑 Pemilik Utama' : '🛡️ Admin Pengelola';
       const item = document.createElement('div');
-      item.className = 'owner-item';
+      item.className = 'owner-card-item';
 
       item.innerHTML = `
-        <div class="owner-info">
-          <div class="owner-avatar">${isPrimary ? '👑' : '🛡️'}</div>
+        <div class="owner-identity">
+          <div class="owner-symbol-avatar">${isPrimary ? '👑' : '🛡️'}</div>
           <div>
-            <div style="font-family: var(--font-mono); font-size: 13px; font-weight: 600; color: var(--text-primary);">+${num}</div>
-            <div style="font-size: 11px; color: var(--text-tertiary); margin-top: 1px;">${roleLabel}</div>
+            <div class="owner-phone-text">+${num}</div>
+            <div class="owner-role-tag">${roleLabel}</div>
           </div>
         </div>
         <div>

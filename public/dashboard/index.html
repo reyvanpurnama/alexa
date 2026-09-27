@@ -241,7 +241,7 @@
         <!-- Col-7: Knowledge Hub (Dual-Mode Editor) -->
         <div class="bento-card col-7">
           <div>
-            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; gap: 8px;">
+            <div class="kb-card-header">
               <div>
                 <div class="card-title" style="margin-bottom: 4px;">Basis Pengetahuan (Knowledge Hub)</div>
                 <div style="font-size: 12px; color: var(--text-secondary); line-height: 1.4;">
@@ -259,17 +259,17 @@
 
             <!-- VIEW 1: DOKUMEN PROFIL (MARKDOWN) -->
             <div id="view-kb-doc" class="sub-tab-view active">
-              <div class="form-group" style="margin-bottom: 12px;">
-                <textarea id="kb-business-doc" class="form-textarea" rows="13" style="font-family: var(--font-mono); font-size: 12px; line-height: 1.6; resize: vertical;" placeholder="Tuliskan profil toko, jam buka, nomor rekening, alamat, dan kebijakan garansi di sini..."></textarea>
-              </div>
-
-              <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border-subtle); padding-top: 12px;">
-                <div style="font-size: 11px; color: var(--text-tertiary); font-family: var(--font-mono);">
-                  File: <code>knowledge/business.md</code> • Sinkronisasi otomatis
-                </div>
-                <div style="display: flex; gap: 8px;">
-                  <button class="btn btn-secondary btn-sm" id="btn-refresh-kb">Muat Ulang</button>
-                  <button class="btn btn-primary btn-sm" id="btn-save-kb-doc">Simpan & Terapkan</button>
+              <div class="kb-editor-box">
+                <textarea id="kb-business-doc" class="kb-editor-textarea" rows="13" placeholder="Tuliskan profil toko, jam buka, nomor rekening, alamat, dan kebijakan garansi di sini..."></textarea>
+                <div class="kb-editor-footer">
+                  <div class="kb-file-tag">
+                    <span class="kb-file-dot"></span>
+                    <code>knowledge/business.md</code> • Sinkronisasi Otomatis
+                  </div>
+                  <div style="display: flex; gap: 8px;">
+                    <button class="btn btn-secondary btn-sm" id="btn-refresh-kb">Muat Ulang</button>
+                    <button class="btn btn-primary btn-sm" id="btn-save-kb-doc">Simpan & Terapkan</button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -307,7 +307,7 @@
         <div class="bento-card col-5">
           <div>
             <div class="card-title" style="margin-bottom: 4px;">Simulator Verifikasi AI</div>
-            <p style="font-size: 12px; color: var(--text-secondary); margin-bottom: 12px; line-height: 1.4;">
+            <p style="font-size: 12px; color: var(--text-secondary); margin-bottom: 14px; line-height: 1.4;">
               Verifikasi akurasi respons bot dengan basis pengetahuan terkini secara instan sebelum menjawab pesan riil pelanggan.
             </p>
 
@@ -330,11 +330,11 @@
 
             <!-- Respons Container -->
             <div>
-              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
                 <label class="form-label" style="margin-bottom: 0;">Respons Asisten (Live)</label>
                 <span id="ai-latency-tag" class="ai-latency-pill" style="display: none;">⚡ Ready</span>
               </div>
-              <div id="ai-response-box" style="background: var(--bg-surface-elevated); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 14px; min-height: 140px; font-size: 13px; color: var(--text-secondary); line-height: 1.6; white-space: pre-wrap;">Ketik pertanyaan atau klik salah satu topik di atas untuk memverifikasi data respons bot.</div>
+              <div id="ai-response-box" class="ai-response-card">Ketik pertanyaan atau klik salah satu topik di atas untuk memverifikasi data respons bot.</div>
             </div>
           </div>
         </div>
@@ -348,13 +348,15 @@
         <!-- Col-7: Pengelola & Hak Akses (Owners & Roles) -->
         <div class="bento-card col-7">
           <div>
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-              <div class="card-title" style="margin-bottom: 0;">Pengelola & Hak Akses (Owners & Admins)</div>
-              <span id="owners-count-badge" style="font-size: 11px; color: var(--text-tertiary); font-family: var(--font-mono);">0 Pengelola</span>
+            <div class="kb-card-header">
+              <div>
+                <div class="card-title" style="margin-bottom: 4px;">Pengelola & Hak Akses</div>
+                <div style="font-size: 12px; color: var(--text-secondary); line-height: 1.4;">
+                  Nomor terdaftar berwenang menjalankan perintah privat (<code>/broadcast</code>, <code>/logout</code>) serta menerima notifikasi eskalasi bantuan pelanggan.
+                </div>
+              </div>
+              <span id="owners-count-badge" class="ai-stat-chip">0 Pengelola</span>
             </div>
-            <p style="font-size: 12px; color: var(--text-secondary); margin-bottom: 16px; line-height: 1.5;">
-              Nomor di daftar ini memiliki hak eksekusi perintah privat (seperti <code>/broadcast</code>, <code>/logout</code>) dan otomatis menerima notifikasi darurat & bukti pembayaran dari pelanggan.
-            </p>
 
             <div id="owners-list" class="owner-list">
               <div style="text-align: center; color: var(--text-tertiary); font-size: 12px; padding: 14px;">Memuat daftar pengelola...</div>
@@ -370,65 +372,82 @@
           </div>
         </div>
 
-        <!-- Col-5: Saklar Otomasi & AI (Apple Switch) -->
+        <!-- Col-5: Otomasi & Anti-Ban (Apple HIG Inset Group) -->
         <div class="bento-card col-5">
-          <div>
-            <div class="card-title">Otomasi Balasan AI</div>
-            <div style="display: flex; justify-content: space-between; align-items: flex-start; background: var(--bg-surface-elevated); padding: 16px; border-radius: var(--radius-md); border: 1px solid var(--border-subtle); margin-bottom: 16px;">
-              <div style="padding-right: 12px;">
-                <div style="font-size: 13px; font-weight: 600; color: var(--text-primary); margin-bottom: 4px;">Balasan Otomatis AI</div>
-                <div style="font-size: 11px; color: var(--text-secondary); line-height: 1.4;">
-                  Aktifkan agar asisten otomatis membalas pesan masuk pelanggan menggunakan basis data pengetahuan.
+          <div class="settings-section">
+            <div class="apple-group-header">Otomasi & Keamanan</div>
+            <div class="apple-group">
+              <!-- Row 1: Saklar AI -->
+              <div class="apple-group-row">
+                <div class="apple-row-content">
+                  <div class="apple-row-label">Balasan Otomatis AI</div>
+                  <div class="apple-row-sublabel">
+                    Asisten otomatis membalas obrolan pelanggan menggunakan basis pengetahuan.
+                  </div>
+                </div>
+                <div class="apple-row-action">
+                  <label class="switch">
+                    <input type="checkbox" id="toggle-ai-autoreply" />
+                    <span class="slider"></span>
+                  </label>
                 </div>
               </div>
-              <label class="switch">
-                <input type="checkbox" id="toggle-ai-autoreply" />
-                <span class="slider"></span>
-              </label>
-            </div>
 
-            <div style="font-size: 12px; color: var(--text-tertiary); line-height: 1.5;">
-              💡 <b>Catatan Apple HIG:</b> Ketika dimatikan, asisten tidak akan menjawab pesan obrolan biasa, namun perintah bot (seperti <code>/ping</code>, <code>/menu</code>) dan kampanye broadcast tetap beroperasi normal.
-            </div>
-          </div>
-        </div>
-
-        <!-- Col-6: Identitas & Tampilan Bot -->
-        <div class="bento-card col-6">
-          <div>
-            <div class="card-title">Identitas & Tampilan Bot</div>
-            <div class="form-group">
-              <label class="form-label" for="setting-bot-name">Nama Bot</label>
-              <input type="text" id="setting-bot-name" class="form-input" placeholder="Alexa" />
-            </div>
-            <div class="form-group">
-              <label class="form-label" for="setting-prefix">Prefix Perintah</label>
-              <input type="text" id="setting-prefix" class="form-input" placeholder="/" style="max-width: 100px; font-family: var(--font-mono);" />
-            </div>
-            <div class="form-group">
-              <label class="form-label" for="setting-footer">Teks Footer Pesan (Opsional)</label>
-              <textarea id="setting-footer" class="form-textarea" rows="2" placeholder="contoh: Dikirim otomatis oleh Asisten Resmi Toko"></textarea>
-            </div>
-          </div>
-          <button class="btn btn-secondary" id="btn-save-identity" style="width: 100%; margin-top: 10px;">Simpan Identitas</button>
-        </div>
-
-        <!-- Col-6: Parameter Kecepatan & Anti-Ban -->
-        <div class="bento-card col-6">
-          <div>
-            <div class="card-title">Kecepatan & Anti-Ban Throttling</div>
-            <div class="form-group">
-              <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
-                <label class="form-label" style="margin-bottom: 0;">Jeda Antrean Pesan (Base Delay)</label>
-                <span id="delay-display-val" style="font-family: var(--font-mono); font-size: 12px; color: var(--accent-blue); font-weight: 600;">2.5 detik</span>
+              <!-- Row 2: Anti-Ban Delay Slider -->
+              <div class="apple-group-row-stacked">
+                <div class="apple-slider-wrap">
+                  <div class="apple-slider-header">
+                    <div>
+                      <div class="apple-row-label">Jeda Antrean (Anti-Ban)</div>
+                      <div class="apple-row-sublabel">Waktu jeda antar pesan keluar untuk mencegah blokir WhatsApp.</div>
+                    </div>
+                    <span id="delay-display-val" class="apple-slider-val-badge">2.5 detik</span>
+                  </div>
+                  <input type="range" id="setting-delay-range" class="apple-range-input" min="1000" max="8000" step="500" value="2500" />
+                </div>
+                <div style="display: flex; justify-content: flex-end; margin-top: 4px;">
+                  <button class="btn btn-secondary btn-sm" id="btn-save-speed">Simpan Jeda</button>
+                </div>
               </div>
-              <input type="range" id="setting-delay-range" min="1000" max="8000" step="500" value="2500" style="width: 100%; accent-color: var(--accent-blue); cursor: pointer;" />
-            </div>
-            <div style="font-size: 12px; color: var(--text-tertiary); line-height: 1.5; margin-bottom: 16px;">
-              Jeda pengiriman beruntun untuk meminimalisir risiko deteksi spam oleh WhatsApp. Sistem secara otomatis menambahkan <i>human jitter</i> (acak 0–1 detik) di atas nilai ini.
             </div>
           </div>
-          <button class="btn btn-secondary" id="btn-save-speed" style="width: 100%; margin-top: 10px;">Simpan Parameter Kecepatan</button>
+        </div>
+
+        <!-- Col-12: Identitas Bot (Apple Inset Grouped) -->
+        <div class="bento-card col-12">
+          <div class="settings-section">
+            <div class="apple-group-header">Identitas & Tampilan Bot</div>
+            <div class="apple-group">
+              <div class="apple-group-row">
+                <div class="apple-row-content" style="max-width: 260px;">
+                  <div class="apple-row-label">Nama Asisten</div>
+                  <div class="apple-row-sublabel">Nama resmi bot yang tampil di salam sapaan.</div>
+                </div>
+                <div style="flex: 1; max-width: 320px;">
+                  <input type="text" id="setting-bot-name" class="form-input" placeholder="Alexa" />
+                </div>
+              </div>
+
+              <div class="apple-group-row">
+                <div class="apple-row-content" style="max-width: 260px;">
+                  <div class="apple-row-label">Prefix Perintah</div>
+                  <div class="apple-row-sublabel">Karakter awalan untuk memicu perintah privat (misal: /).</div>
+                </div>
+                <div style="flex: 1; max-width: 120px;">
+                  <input type="text" id="setting-prefix" class="form-input" placeholder="/" style="font-family: var(--font-mono); text-align: center;" />
+                </div>
+              </div>
+
+              <div class="apple-group-row-stacked">
+                <div class="apple-row-label">Teks Footer Pesan (Opsional)</div>
+                <div class="apple-row-sublabel">Catatan kaki otomatis di akhir balasan pesan broadcast atau informasi sistem.</div>
+                <textarea id="setting-footer" class="form-textarea" rows="2" placeholder="contoh: Dikirim otomatis oleh Asisten Resmi Toko"></textarea>
+                <div style="display: flex; justify-content: flex-end; margin-top: 4px;">
+                  <button class="btn btn-primary btn-sm" id="btn-save-identity">Simpan Identitas</button>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
