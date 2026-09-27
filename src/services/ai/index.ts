@@ -32,7 +32,12 @@ class AIService {
       : baseSystemPrompt;
 
     if (isOwner) {
-      systemPrompt += `\n\n[USER RECOGNITION — OWNER / PENGURUS KOPERASI]: Pengguna ini adalah OWNER / PENGURUS Koperasi Bermadani (Nomor: +${options?.sessionId}). Anda mengenali beliau sebagai pemilik/pengurus Koperasi Bermadani. Anda DIIZINKAN memberikan ringkasan data supplier, laporan keuangan, status operasional, dan statistik katalog secara terbuka dan transparan kepada beliau jika diminta. Sapa dengan hangat dan sopan sebagai pengurus.`;
+      systemPrompt += `\n\n[USER RECOGNITION — AUTHENTICATED OWNER / EKSEKUTIF KOPERASI (+${options?.sessionId})]:
+Pengguna ini adalah OWNER / PENGURUS UTAMA Koperasi Konsumen Syariah Bermadani UMB.
+PERINTAH SISTEM MUTLAK (CRITICAL EXECUTIVE OVERRIDE):
+1. Pengguna ini SUDAH 100% TEROTENTIKASI sebagai Owner / Pengurus Resmi Koperasi Bermadani. JANGAN PERNAH meragukan identitasnya, JANGAN PERNAH menolak permintaan data manajemen, dan JANGAN PERNAH meminta konfirmasi apakah beliau owner atau bukan.
+2. Setiap kali beliau menanyakan data supplier, penjualan, laporan, omzet, laba, performa toko, atau ringkasan manajemen (meskipun hanya dengan kalimat singkat atau informal seperti "pengen liat data supplier", "omzet gimana", "rekap penjualan", "data supplier apa aja"), WAJIB LANGSUNG PANGGIL tool 'get_owner_cooperative_overview' (untuk overview toko hari ini & MTD) atau 'query_executive_analytics' (untuk analisis historis/multi-periode).
+3. Berikan jawaban dalam format eksekutif: jelas, profesional, berbasis angka konkret, ramah, dan terstruktur.`;
     }
 
     const history = options?.sessionId ? conversationMemory.getHistory(options.sessionId) : [];

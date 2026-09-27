@@ -138,10 +138,46 @@ export const aiTools: OpenAI.Chat.Completions.ChatCompletionTool[] = [
     function: {
       name: 'get_owner_cooperative_overview',
       description:
-        'Khusus Owner / Pengurus Koperasi: Mengambil ringkasan statistik komprehensif manajemen koperasi, daftar mitra supplier aktif, total jenis produk aktif, produk menipis (low stock), dan omzet transaksi hari ini. Panggil tool ini saat owner/pengurus menanyakan data supplier, performa toko, atau ringkasan manajemen koperasi.',
+        'Khusus Owner / Pengurus Koperasi: Mengambil ringkasan operasional eksekutif real-time (Lapis 1 Fast Pulse), mencakup omzet & transaksi hari ini, penjualan MTD bulan berjalan, 5 produk paling laris MTD, 5 supplier paling laris MTD, daftar seluruh mitra supplier aktif, dan stok produk yang menipis/sekarat. Panggil tool ini secara otomatis setiap kali owner/pengurus menanyakan ringkasan toko, performa hari ini/bulan ini, atau daftar supplier.',
       parameters: {
         type: 'object',
         properties: {},
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'query_executive_analytics',
+      description:
+        'Khusus Owner / Pengurus Koperasi: Analisis historis mendalam & perbandingan multi-periode (Lapis 2 Time-Travel Analytics). Mendukung periode: "today", "yesterday", "this_week", "this_month", "last_month", "this_year" (YTD), "all_time", atau custom rentang tanggal. Panggil tool ini saat owner menanyakan perbandingan omzet antar periode (misal bulan lalu vs bulan ini), total penjualan sepanjang tahun ini/sepanjang masa, atau performa supplier/produk tertentu sepanjang waktu.',
+      parameters: {
+        type: 'object',
+        properties: {
+          period: {
+            type: 'string',
+            enum: ['today', 'yesterday', 'this_week', 'this_month', 'last_month', 'this_year', 'all_time', 'custom'],
+            description: 'Periode waktu analisis historis yang diinginkan.',
+          },
+          scope: {
+            type: 'string',
+            enum: ['summary', 'sales', 'suppliers', 'products', 'settlements'],
+            description: 'Fokus analisis: "summary" (omzet, top supplier & top produk), "sales" (detail struk & rata-rata order), "suppliers" (ranking supplier), "products" (ranking produk), atau "settlements" (total pencairan bagi hasil).',
+          },
+          target_name: {
+            type: 'string',
+            description: 'Nama spesifik supplier atau produk jika ingin memfilter data entitas tertentu (opsional).',
+          },
+          start_date: {
+            type: 'string',
+            description: 'Tanggal awal format YYYY-MM-DD jika memilih period "custom".',
+          },
+          end_date: {
+            type: 'string',
+            description: 'Tanggal akhir format YYYY-MM-DD jika memilih period "custom".',
+          },
+        },
+        required: ['period'],
       },
     },
   },
@@ -209,7 +245,7 @@ export async function executeTool(
 
     case 'check_product_stock': {
       const query = String(args.query || '').trim();
-      const result = await fetchFromLaravel('/api/bot/products', { q: query, limit: '25' });
+      const result = await fetchFromLaravel('/api/bot/products', { q: query, limit: '50' });
       return JSON.stringify(result);
     }
 
@@ -254,6 +290,27 @@ export async function executeTool(
         });
       }
       const result = await fetchFromLaravel('/api/bot/owner-summary');
+      return JSON.stringify(result);
+    }
+
+    case 'query_executive_analytics': {
+      const senderPhone = context.senderNumber || context.sessionId || '';
+      const isOwner = config.OWNER_NUMBERS.includes(senderPhone);
+      if (!isOwner) {
+        return JSON.stringify({
+          success: false,
+          error: 'Akses ditolak: Analisis data eksekutif koperasi hanya dapat diakses oleh nomor Owner / Pengurus terdaftar.',
+        });
+      }
+      const params: Record<string, string> = {
+        period: String(args.period || 'this_month'),
+      };
+      if (args.scope) params.scope = String(args.scope);
+      if (args.target_name) params.target_name = String(args.target_name);
+      if (args.start_date) params.start_date = String(args.start_date);
+      if (args.end_date) params.end_date = String(args.end_date);
+
+      const result = await fetchFromLaravel('/api/bot/analytics', params);
       return JSON.stringify(result);
     }
 
