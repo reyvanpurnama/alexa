@@ -5,6 +5,7 @@ import { dispatchWebhook } from '../../utils/webhook.js';
 import { logger } from '../../utils/logger.js';
 import { config } from '../../config/index.js';
 import { alertService } from '../alerts/index.js';
+import { localStore } from '../../core/store/localStore.js';
 
 export interface ToolExecutionContext {
   sessionId?: string;
@@ -49,6 +50,29 @@ export const aiTools: OpenAI.Chat.Completions.ChatCompletionTool[] = [
       parameters: {
         type: 'object',
         properties: {},
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'query_business_data',
+      description:
+        'Jalankan kueri SQL SELECT baca-saja ke database lokal bisnis untuk mengambil data transaksi kasir, stok produk, riwayat pelanggan, atau analitik operasional secara dinamis. Gunakan schema tabel yang tersedia di sistem prompt.',
+      parameters: {
+        type: 'object',
+        properties: {
+          sql: {
+            type: 'string',
+            description:
+              'Kueri SQL SELECT murni (hanya baca). Contoh: "SELECT cashier_name, SUM(total_amount) as total FROM pos_transactions WHERE created_at >= date(\'now\') GROUP BY cashier_name"',
+          },
+          purpose: {
+            type: 'string',
+            description: 'Tujuan analitik kueri ini dibuat (untuk logging audit internal).',
+          },
+        },
+        required: ['sql'],
       },
     },
   },
@@ -141,6 +165,30 @@ export async function executeTool(
         platform: `${os.type()} ${os.arch()}`,
         nodeVersion: process.version,
       });
+    }
+
+    case 'query_business_data': {
+      const sql = String(args.sql || '').trim();
+      const purpose = String(args.purpose || 'business_analytics');
+      if (!sql) {
+        return JSON.stringify({ success: false, error: 'SQL query cannot be empty' });
+      }
+
+      logger.info({ purpose, sql }, '[AI Query Business Data] Executing local query');
+      try {
+        const rows = localStore.executeSafeQuery(sql);
+        return JSON.stringify({
+          success: true,
+          count: rows.length,
+          data: rows,
+        });
+      } catch (err: unknown) {
+        logger.warn({ err, sql }, '[AI Query Business Data] Query failed');
+        return JSON.stringify({
+          success: false,
+          error: (err as Error).message || 'Gagal mengeksekusi query database lokal',
+        });
+      }
     }
 
     default:

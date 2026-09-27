@@ -6,6 +6,7 @@ import { takeoverManager } from './takeover.js';
 import { messageDebouncer } from './debouncer.js';
 import { aiTools, executeTool } from './tools.js';
 import { knowledgeManager } from './knowledge.js';
+import { localStore } from '../../core/store/localStore.js';
 
 export { conversationMemory, takeoverManager, messageDebouncer, knowledgeManager, type ChatMessage };
 
@@ -18,7 +19,7 @@ export interface AIOptions {
 class AIService {
   /**
    * Generates text response using the configured AI provider,
-   * grounded with business knowledge base, multi-turn memory, and autonomous tool calling.
+   * grounded with business knowledge base, dynamic SQLite schema, multi-turn memory, and autonomous tool calling.
    */
   async generateResponse(prompt: string, options?: AIOptions): Promise<string> {
     const provider = config.AI_PROVIDER;
@@ -30,6 +31,12 @@ class AIService {
     let systemPrompt = knowledgeContext
       ? `${baseSystemPrompt}\n\n${knowledgeContext}`
       : baseSystemPrompt;
+
+    const schemaContext = localStore.getSchemaContext();
+    if (schemaContext) {
+      systemPrompt += `\n\n${schemaContext}\n\n[PANDUAN KUERI DATA BISNIS LOKAL]:
+Jika pengguna (terutama owner/admin) menanyakan informasi atau analitik yang relevan dengan tabel di atas (misal omzet, rekap transaksi, ranking produk, performa kasir), GUNAKAN tool "query_business_data" untuk menjalankan kueri SQL SELECT yang efisien dan akurat. Sajikan hasil dalam format Apple HIG Quiet UI: ringkas, angka terstruktur, dan ramah dibaca.`;
+    }
 
     if (isOwner) {
       systemPrompt += `\n\n[USER RECOGNITION — AUTHENTICATED OWNER (+${options?.sessionId})]:

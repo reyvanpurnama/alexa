@@ -7,6 +7,7 @@ import { broadcastRoutes } from './api/broadcast.js';
 import { aiRoutes } from './api/ai.js';
 import { settingsRoutes } from './api/settings.js';
 import { queueRoutes } from './api/queue.js';
+import { syncRoutes } from './api/sync.js';
 
 export const apiRoutes: FastifyPluginAsync = async (fastify) => {
   // Authentication preHandler hook for protected API routes
@@ -19,13 +20,18 @@ export const apiRoutes: FastifyPluginAsync = async (fastify) => {
 
     const apiKey =
       (request.headers['x-api-key'] as string) ||
+      (request.headers['x-webhook-secret'] as string) ||
       (request.headers.authorization ? request.headers.authorization.replace('Bearer ', '') : null) ||
       (request.query as { apiKey?: string })?.apiKey;
 
-    if (!apiKey || apiKey !== config.API_KEY) {
+    const isValid =
+      apiKey &&
+      (apiKey === config.API_KEY || (config.WEBHOOK_SECRET && apiKey === config.WEBHOOK_SECRET));
+
+    if (!isValid) {
       return reply.code(401).send({
         success: false,
-        error: 'Unauthorized: Invalid or missing API Key. Pass "x-api-key" header.',
+        error: 'Unauthorized: Invalid or missing API Key. Pass "x-api-key" or "x-webhook-secret" header.',
       });
     }
   });
@@ -38,4 +44,5 @@ export const apiRoutes: FastifyPluginAsync = async (fastify) => {
   await fastify.register(aiRoutes);
   await fastify.register(settingsRoutes);
   await fastify.register(queueRoutes);
+  await fastify.register(syncRoutes);
 };

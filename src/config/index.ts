@@ -52,6 +52,14 @@ const envSchema = z.object({
 
   // Anti-Ban & Queuing
   MESSAGE_DELAY_MS: z.coerce.number().default(2500),
+
+  // Incremental Data Sync Reconciler (Optional Catch-up)
+  SYNC_RECONCILE_ENABLED: z
+    .string()
+    .default('false')
+    .transform((val) => val.toLowerCase() === 'true'),
+  SYNC_RECONCILE_INTERVAL_MIN: z.coerce.number().default(15),
+  SYNC_RECONCILE_URL: z.string().optional().default(''),
 });
 
 const parsed = envSchema.safeParse(process.env);

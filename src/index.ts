@@ -2,6 +2,7 @@ import { config } from './config/index.js';
 import { waClient } from './core/whatsapp.js';
 import { commandManager } from './core/commandManager.js';
 import { startServer } from './server/index.js';
+import { syncReconciler } from './services/sync/reconciler.js';
 import { logger } from './utils/logger.js';
 
 async function bootstrap() {
@@ -14,7 +15,10 @@ async function bootstrap() {
     // 2. Start REST API Server
     await startServer();
 
-    // 3. Initialize WhatsApp Socket
+    // 3. Start Data Sync Reconciler (if enabled)
+    syncReconciler.start();
+
+    // 4. Initialize WhatsApp Socket
     await waClient.initialize();
   } catch (error) {
     logger.error({ error }, 'Fatal error during startup');
