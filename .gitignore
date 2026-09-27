@@ -2,6 +2,7 @@ node_modules/
 dist/
 sessions/
 data/
+docs/
 .env
 *.log
 .DS_Store

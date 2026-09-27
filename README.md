@@ -1,6 +1,6 @@
 # Alexa
 
-> **Autonomous WhatsApp Business Engine with Embedded Edge-Data Mirroring & Apple HIG Conversational UX.**  
+> Autonomous WhatsApp Business Engine with Embedded Edge-Data Mirroring & Apple HIG Conversational UX.  
 > Built with Baileys, Fastify, and Node.js Native SQLite.
 
 [![Node Version](https://img.shields.io/badge/node-%3E%3D20.0.0-339933?logo=node.js&logoColor=white)](#requirements)
@@ -13,79 +13,52 @@
 
 ## Overview
 
-Alexa is an enterprise-grade WhatsApp automation engine designed for modern businesses, retail stores, and online services. Unlike rigid chatbot frameworks that require hardcoded endpoints or risk locking external databases with heavy queries, Alexa features an **Embedded Edge-Data Mirror** and **Apple HIG Conversational Mechanics**:
+Alexa is an enterprise-grade WhatsApp automation engine designed for modern businesses, e-commerce stores, and retail operations. Rather than querying live production databases or relying on rigid hardcoded endpoints, Alexa integrates an **Embedded Edge-Data Store** with **Apple HIG Conversational Mechanics**:
 
-1. **Edge-Data Mirroring**: Replicates transactional records into an embedded local SQLite engine in WAL mode. Owners can ask complex questions (*"Who was the top-grossing cashier today?"*), and the AI executes microsecond local SQL queries without putting any load on production MySQL/cPanel databases.
-2. **Apple HIG Conversational UX**: Messages receive an immediate 0-second double blue tick (`markRead`) and maintain a continuous 4-second typing heartbeat (`sendTyping`) during AI inference, eliminating customer anxiety and making waiting times feel natural.
-3. **Universal Webhook & Delivery Engine**: Full REST API for outbound messaging, smart broadcasts with recursive Spintax, lifecycle delivery receipts (Queued ➔ Sent ➔ Delivered ➔ Read), and real-time webhook dispatching.
-4. **Quiet Web Dashboard**: Clean macOS/iOS-inspired control plane featuring Inset Grouped Settings, Dual-Mode Knowledge Hub, and browser Visibility API battery guards.
-
----
-
-## Architecture at a Glance
-
-```mermaid
-flowchart LR
-    subgraph Client Apps [Laravel / POS / Web]
-        POS[Aplikasi Kasir / Web Store] -->|1. Webhook Real-time| INGEST[POST /api/sync/events]
-    end
-
-    subgraph Alexa Core Engine [bot-wa]
-        INGEST -->|Auto-DDL & Upsert| SQLITE[(Embedded SQLite\nWAL Mode < 1ms)]
-        
-        WA_IN[Pesan Masuk Pelanggan] -->|Centang Biru 0 Detik| ACK[m.markRead]
-        ACK --> DEBOUNCE[Typing Heartbeat\nm.sendTyping tiap 4s]
-        
-        DEBOUNCE --> AI[AI Orchestrator]
-        AI -->|SQL SELECT Dinamis| TOOL[Tool: query_business_data]
-        TOOL -->|Validasi Ketat| GUARD{Read-Only Guard}
-        GUARD -->|Hanya SELECT| SQLITE
-        
-        SQLITE -->|Hasil Agregasi < 2ms| TOOL
-        TOOL -->|Ringkas & Terstruktur| AI
-        AI -->|Apple HIG Quiet UI| WA_OUT[Balas ke WhatsApp]
-    end
-```
+1. **Edge-Data Mirroring**: Replicates transactional records into an embedded SQLite database in WAL mode. When administrators or owners query analytics (*"What is today's revenue by cashier?"*), the AI autonomously runs safe, microsecond SQL aggregations locally without placing any load on external databases or point-of-sale systems.
+2. **Apple HIG Conversational UX**: Incoming messages receive an immediate 0-second double blue tick (`markRead`) and sustain a continuous 4-second typing heartbeat (`sendTyping`) during AI inference, providing clear visual feedback and making wait times feel natural.
+3. **Universal REST Gateway & Delivery Receipts**: Full API for transactional messaging, anti-ban bulk broadcasts with recursive Spintax, lifecycle delivery tracking (Queued ➔ Sent ➔ Delivered ➔ Read), and outbound webhooks.
+4. **Quiet Web Dashboard**: A minimalist control plane built with Apple Inset Grouped layout, dual-mode knowledge editor, and Page Visibility API integration to eliminate background battery and network drain.
 
 ---
 
 ## Key Features
 
-- **Embedded SQLite (WAL Mode)**: Ultra-fast local data store running inside Node.js natively. Zero external database dependencies, zero table locks on POS cashiers.
-- **Autonomous Business Query Tool**: The AI inspects local schemas dynamically and runs safe `SELECT` queries to compute metrics in under 2 milliseconds, saving up to 90% LLM token usage.
-- **Strict Read-Only Guard**: Mutation keywords (`INSERT`, `UPDATE`, `DELETE`, `DROP`, `ALTER`, `PRAGMA`) are strictly rejected at the engine level to prevent prompt injection attacks.
+- **Embedded SQLite Core (WAL Mode)**: High-throughput local storage running directly inside Node.js. Zero external database configuration required.
+- **Autonomous Business Analytics Tool**: The AI introspects local table schemas and generates read-only `SELECT` queries to aggregate metrics in under 2 milliseconds, reducing LLM token consumption by up to 90%.
+- **Hardware-Grade Read-Only Guard**: Mutation keywords (`INSERT`, `UPDATE`, `DELETE`, `DROP`, `ALTER`, `TRUNCATE`, `PRAGMA`) are strictly rejected by an AST-level query validator to prevent prompt injection attacks.
 - **Immediate Read Receipts**: Instant double blue ticks acknowledge message reception within 0 seconds.
-- **Persistent Typing Heartbeat**: Automatically refreshes the WhatsApp `composing` indicator every 4 seconds to bypass the native 5-second timeout while LLMs generate responses.
-- **Anti-Ban Smart Broadcast**: Recursive Spintax generator, human jitter pacing (4s–8s), and automatic batch resting.
-- **Universal Lifecycle Tracking**: Messages tracked from in-memory queue to carrier receipt with webhook callbacks (`message.delivered`, `message.read`).
-- **Quiet Control Plane**: Built with Vanilla CSS adhering to Apple Human Interface Guidelines: no visual clutter, progressive disclosure drawers, and zero background battery drain via the Page Visibility API.
+- **Persistent Typing Heartbeat**: Automatically refreshes the WhatsApp `composing` indicator every 4 seconds to override the native 5-second timeout during AI reasoning.
+- **Anti-Ban Outbound Queue**: Sequential execution, randomized human jitter (4s–8s), and automatic batch cooldowns to mitigate spam detection.
+- **Universal Delivery Lifecycle**: Comprehensive delivery tracking with real-time webhooks (`message.delivered`, `message.read`, `message.failed`).
+- **Quiet Control Plane**: Adheres to Apple Human Interface Guidelines: zero visual clutter, progressive disclosure sheets, and automatic polling suspension when browser tabs are hidden.
 
 ---
 
 ## Quick Start
 
-### 1. Requirements
+### Requirements
 * Node.js **20.0+** (Node.js 22+ recommended for native `node:sqlite`)
 * npm, pnpm, or yarn
 
-### 2. Installation
+### Installation
 ```bash
-# Clone the repository
+# Clone repository
 git clone https://github.com/reyvanpurnama/alexa.git
 cd alexa
 
 # Install dependencies
 npm install
 
-# Copy environment configuration
+# Configure environment
 cp .env.example .env
 ```
 
-### 3. Essential Environment Variables
-Configure your `.env` file with your preferred credentials:
+### Environment Configuration
+Configure `.env` with your credentials:
 
 ```ini
-# Server
+# Server Configuration
 PORT=3000
 HOST=0.0.0.0
 API_KEY=your_secure_api_key_here
@@ -93,7 +66,7 @@ API_KEY=your_secure_api_key_here
 # Bot Identity
 BOT_NAME=Alexa
 PREFIX=/
-OWNER_NUMBERS=628123456789,628987654321
+OWNER_NUMBERS=628123456789
 
 # AI Provider (gemini | openai | groq | deepseek | ollama | custom)
 AI_PROVIDER=groq
@@ -101,26 +74,26 @@ AI_API_KEY=gsk_your_groq_api_key_here
 AI_MODEL=openai/gpt-oss-120b
 AI_AUTO_REPLY=true
 
-# Optional: Outbound Webhook to your backend
+# Optional: Outbound Webhook Integration
 WEBHOOK_URL=https://your-domain.com/api/whatsapp/webhook
 WEBHOOK_SECRET=your_webhook_secret_key
 ```
 
-### 4. Run Development Server
+### Run
 ```bash
 npm run dev
 ```
 
-Open your browser at **`http://localhost:3000/dashboard`** to link your WhatsApp account via QR Code or 8-Digit Pairing Code.
+Navigate to **`http://localhost:3000/dashboard`** to link your WhatsApp account via QR Code or 8-Digit Pairing Code.
 
 ---
 
-## Universal Integration Guide (For Developers)
+## Developer Integration Guide
 
-Connecting your Laravel, Django, Node, or POS backend to Alexa requires zero modifications to Alexa's source code.
+Integrate external applications (Laravel, Django, Node.js, Go, or POS terminals) with Alexa via standard HTTP requests without touching the core engine code.
 
-### 1. Mirroring Real-Time Business Data
-Push order receipts, inventory changes, or customer balances to Alexa whenever an event occurs in your database:
+### 1. Ingest Real-Time Business Data
+Push transactions, orders, inventory updates, or customer profiles whenever events occur in your primary system:
 
 ```bash
 curl -X POST http://localhost:3000/api/sync/events \
@@ -134,16 +107,16 @@ curl -X POST http://localhost:3000/api/sync/events \
       "id": 1054,
       "invoice_no": "INV-20260927-001",
       "total_amount": 75000,
-      "cashier_name": "Fajar",
+      "cashier_name": "Alex",
       "payment_method": "QRIS",
       "created_at": "2026-09-27 18:30:00"
     }
   }'
 ```
-*Note: If the table or column does not exist yet, Alexa automatically creates and alters the schema on the fly (Auto-DDL).*
+*Note: If the target table or new columns do not exist yet, Alexa automatically creates and alters the local SQLite schema dynamically (Auto-DDL).*
 
-### 2. Sending Outbound Messages with Delivery Tracking
-Dispatch notifications or verification OTPs. Pass `queued: true` to enable anti-ban pacing:
+### 2. Send Outbound Messages with Delivery Tracking
+Dispatch notifications or verification codes with lifecycle tracking:
 
 ```bash
 curl -X POST http://localhost:3000/api/send-message \
@@ -151,62 +124,62 @@ curl -X POST http://localhost:3000/api/send-message \
   -H "x-api-key: your_secure_api_key_here" \
   -d '{
     "to": "628123456789",
-    "message": "Halo! Pesanan #1054 Anda sedang diproses oleh tim kami.",
+    "message": "Hello! Your order #1054 has been confirmed.",
     "queued": true,
     "referenceId": "ORDER-1054"
   }'
 ```
 
-### 3. Querying Delivery Receipts
-Check if a message was successfully delivered or read by the recipient:
+### 3. Query Delivery Receipts
+Verify whether a message was delivered or read by the recipient:
 
 ```bash
 curl -X GET "http://localhost:3000/api/messages/status?referenceId=ORDER-1054" \
   -H "x-api-key: your_secure_api_key_here"
 ```
 
-### 4. Receiving Inbound Events (Webhooks)
-When configured with `WEBHOOK_URL`, Alexa sends real-time HTTP POST notifications for:
-- `message.received`: Customer sends a message or media.
-- `payment.received`: Customer sends an image/PDF with payment receipt intent.
-- `support.requested`: Customer asks for a human admin or types `/human`.
+### 4. Outbound Webhook Events
+When `WEBHOOK_URL` is set, Alexa dispatches real-time events signed with `x-webhook-secret`:
+- `message.received`: Inbound message or attachment received.
+- `payment.received`: Inbound image or PDF detected with payment receipt intent.
+- `support.requested`: Customer requested a human representative.
 
 ---
 
-## Conversational AI & Knowledge Grounding
+## Conversational AI & Grounding
 
 ### Dual-Mode Knowledge Hub
-- **Business Profile (`knowledge/business.md`)**: Provide store addresses, official bank accounts, operational hours, and warranty policies in clean Markdown.
-- **FAQ Builder (`knowledge/faq.json`)**: Manage structured Question-Answer pairs categorized by topic directly from the Web Dashboard.
-- **Zero Hallucinations**: Grounding prompts ensure the assistant strictly reflects your business facts.
+- **Business Profile (`knowledge/business.md`)**: Define business hours, verified payment details, policies, and address in Markdown.
+- **FAQ Builder (`knowledge/faq.json`)**: Manage structured Q&A pairs categorized by topic directly from the Web Dashboard.
+- **Zero Hallucinations**: Grounding prompts constrain the assistant to verified business knowledge.
 
 ### Human Takeover & Auto-Snooze
-- **Owner Manual Reply**: When an owner replies directly from their phone in a private chat, AI auto-reply is automatically muted for 30 minutes to prevent interruptions.
-- **Customer Handover**: When a customer requests a human agent (via `/human` or natural intent), the session is muted for 60 minutes and a webhook/alert is dispatched to the owners.
-- **Manual Control**: Owners can silence or resume auto-replies at any time using `/mute [minutes]` and `/unmute`.
+- **Owner Manual Reply**: When an owner replies directly from their phone in a private chat, AI auto-reply automatically mutes for 30 minutes.
+- **Customer Handover**: When a customer requests human assistance (via `/human` or natural phrasing), AI auto-reply mutes for 60 minutes and alerts the owners.
+- **Manual Control**: Silence or resume auto-replies at any time via `/mute [minutes]` and `/unmute`.
 
 ---
 
 ## REST API Reference
 
-Swagger OpenAPI interactive documentation is available at `http://localhost:3000/docs`.
+Interactive OpenAPI documentation is available at `http://localhost:3000/docs`.
 
 | Endpoint | Method | Scope | Description |
 | :--- | :--- | :--- | :--- |
 | `/api/status` | `GET` | Public | System uptime, connection state, and queue statistics |
-| `/api/send-message` | `POST` | Protected | Send text message (immediate or queued anti-ban) |
-| `/api/send-media` | `POST` | Protected | Send media (image, PDF document, video, voice note) |
+| `/api/send-message` | `POST` | Protected | Dispatch outbound text message (immediate or queued) |
+| `/api/send-media` | `POST` | Protected | Dispatch media (image, PDF document, video, audio) |
 | `/api/check-number` | `POST` | Protected | Check if phone number is registered on WhatsApp |
 | `/api/messages/status` | `GET` | Protected | Query message delivery lifecycle by client `referenceId` |
 | `/api/messages/recent` | `GET` | Protected | Inspect recent outbound messages and carrier ACKs |
 | `/api/sync/events` | `POST` | Protected | Ingest real-time business records into local SQLite store |
 | `/api/sync/status` | `GET` | Protected | View local database stats, tables, and active schema |
-| `/api/sync/query` | `POST` | Protected | Admin safe query explorer (SELECT only) |
+| `/api/sync/query` | `POST` | Protected | Read-only SQL query explorer for administrators |
 | `/api/broadcast` | `POST` | Protected | Launch campaign with Spintax, jitter pacing, and batch rest |
 | `/api/broadcast/status` | `GET` | Protected | Monitor active broadcast progress and completion metrics |
-| `/api/broadcast/pause` | `POST` | Protected | Pause running broadcast |
+| `/api/broadcast/pause` | `POST` | Protected | Pause active broadcast execution |
 | `/api/broadcast/resume`| `POST` | Protected | Resume paused broadcast |
-| `/api/broadcast/cancel`| `POST` | Protected | Cancel remaining broadcast targets |
+| `/api/broadcast/cancel`| `POST` | Protected | Cancel remaining broadcast queue |
 | `/api/pairing` | `POST` | Protected | Request 8-digit WhatsApp pairing code |
 | `/api/session/logout` | `POST` | Protected | Disconnect active WhatsApp session safely |
 | `/api/sessions` | `GET` | Protected | List all saved session profiles on server |
@@ -221,19 +194,19 @@ Swagger OpenAPI interactive documentation is available at `http://localhost:3000
 
 ## Built-In Commands
 
-The command prefix is configurable in `.env` (default: `/`). Mobile keyboard auto-spacing (e.g. `/ menu`) is automatically normalized.
+Command prefix is configurable in `.env` (default: `/`). Mobile keyboard auto-spacing (e.g. `/ menu`) is automatically normalized.
 
 | Command | Aliases | Scope | Description |
 | :--- | :--- | :--- | :--- |
 | `/menu` | `/help` | Public | Display available commands |
-| `/ping` | `/p` | Public | Check bot response and network latency |
+| `/ping` | `/p` | Public | Measure bot response and network latency |
 | `/info` | `/about` | Public | Display system runtime and Baileys version |
 | `/human` | `/cs`, `/admin` | Public | Request immediate handover to a human representative |
-| `/ai` | `/ask`, `/tanya` | Public | Ask AI assistant directly with typing heartbeat |
+| `/ai` | `/ask`, `/tanya` | Public | Query AI assistant directly with typing heartbeat |
 | `/reset` | `/clear` | Public | Clear personal multi-turn conversation memory |
 | `/mute` | `/pause`, `/snooze` | Owner | Silence AI auto-replies in current conversation |
 | `/unmute`| `/resume` | Owner | Re-enable AI auto-replies in current conversation |
-| `/broadcast` | `/bc` | Owner | Launch and control Spintax broadcast campaigns |
+| `/broadcast` | `/bc` | Owner | Launch and manage Spintax broadcast campaigns |
 | `/sessions` | `/profiles` | Owner | List all saved session profiles |
 | `/switch` | `/changesession` | Owner | Switch active session profile |
 | `/reloadkb`| `/refreshkb` | Owner | Reload and re-index business knowledge documents |
@@ -247,7 +220,6 @@ The command prefix is configurable in `.env` (default: `/`). Mobile keyboard aut
 alexa/
 ├── data/                       # Embedded SQLite store (gitignored)
 │   └── local_store.sqlite      # Real-time WAL edge replica
-├── docs/                       # Architectural blueprints & technical specs
 ├── knowledge/                  # Grounding documents
 │   ├── business.md             # Markdown business profile & policies
 │   └── faq.json                # Structured FAQ entries

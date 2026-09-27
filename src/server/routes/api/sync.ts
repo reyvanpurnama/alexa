@@ -25,7 +25,15 @@ export const syncRoutes: FastifyPluginAsync = async (fastify) => {
       });
     }
 
-    const events: SyncPayload[] = Array.isArray(body) ? body : [body as SyncPayload];
+    let events: SyncPayload[] = [];
+    if (Array.isArray(body)) {
+      events = body;
+    } else if (Array.isArray((body as any).events)) {
+      events = (body as any).events;
+    } else {
+      events = [body as SyncPayload];
+    }
+
     if (events.length === 0) {
       return reply.code(400).send({
         success: false,
