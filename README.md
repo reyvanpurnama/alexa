@@ -19,12 +19,15 @@ Alexa is an enterprise-grade WhatsApp automation engine designed for modern busi
 2. **Apple HIG Conversational UX**: Incoming messages receive an immediate 0-second double blue tick (`markRead`) and sustain a continuous 4-second typing heartbeat (`sendTyping`) during AI inference, providing clear visual feedback and making wait times feel natural.
 3. **Universal REST Gateway & Delivery Receipts**: Full API for transactional messaging, anti-ban bulk broadcasts with recursive Spintax, lifecycle delivery tracking (Queued ➔ Sent ➔ Delivered ➔ Read), and outbound webhooks.
 4. **Quiet Web Dashboard**: A minimalist control plane built with Apple Inset Grouped layout, dual-mode knowledge editor, and Page Visibility API integration to eliminate background battery and network drain.
+5. **Role-Based Access Control & Slim Intent Router**: Pluggable role resolver classifies incoming senders into granular roles (`OWNER`, `ADMIN`, `STAFF`, `VIP`, `PUBLIC`) with command-level permission guards. Natural language messages are routed via a 2-Tier Slim Intent Router (Tier 1 regex: 0 tokens; Tier 2 slim LLM: ~300 tokens), achieving a 93%+ token reduction with zero SQL hallucination.
 
 ---
 
 ## Key Features
 
 - **Embedded SQLite Core (WAL Mode)**: High-throughput local storage running directly inside Node.js. Zero external database configuration required.
+- **Role-Based Access Control (RBAC)**: Pluggable `RoleResolver` callback classifies incoming phone numbers with fine-grained command-level guards (`roles?: string[]`) and role-aware `/menu` filtering.
+- **Slim AI Intent Router (2-Tier)**: Eliminates heavy 5,000+ token raw SQL prompts by mapping natural queries to deterministic handlers via Tier 1 regex (0 tokens, <1ms) or Tier 2 slim LLM classification (~300 tokens, <1.5s).
 - **Autonomous Business Analytics Tool**: The AI introspects local table schemas and generates read-only `SELECT` queries to aggregate metrics in under 2 milliseconds, reducing LLM token consumption by up to 90%.
 - **Hardware-Grade Read-Only Guard**: Mutation keywords (`INSERT`, `UPDATE`, `DELETE`, `DROP`, `ALTER`, `TRUNCATE`, `PRAGMA`) are strictly rejected by an AST-level query validator to prevent prompt injection attacks.
 - **Immediate Read Receipts**: Instant double blue ticks acknowledge message reception within 0 seconds.
@@ -144,6 +147,38 @@ When `WEBHOOK_URL` is set, Alexa dispatches real-time events signed with `x-webh
 - `payment.received`: Inbound image or PDF detected with payment receipt intent.
 - `support.requested`: Customer requested a human representative.
 
+### 5. Role-Based Access Control (RBAC) & Slim Intent Router
+Applications can register custom role resolvers and role-scoped deterministic intents into the core engine without modifying engine code:
+
+```typescript
+import { commandManager } from './core/commandManager.js';
+import { intentRouter } from './services/ai/intentRouter.js';
+
+// 1. Register custom role resolver (e.g., query customer tier or staff credentials)
+commandManager.setRoleResolver(async (senderNumber) => {
+  const staff = await getStaffRecord(senderNumber);
+  if (staff) return { role: 'STAFF', data: { staffId: staff.id, name: staff.name, branch: staff.branch } };
+
+  const customer = await getCustomerRecord(senderNumber);
+  if (customer?.isVip) return { role: 'VIP', data: { customerId: customer.id, tier: 'gold' } };
+
+  return 'PUBLIC';
+});
+
+// 2. Register role-scoped deterministic intent (Tier 1 regex + Tier 2 slim LLM)
+intentRouter.registerIntent({
+  name: 'sales_summary',
+  description: 'Retrieve daily or monthly sales metrics for authorized staff',
+  roles: ['STAFF', 'ADMIN', 'OWNER'],
+  patterns: [/sales.*(today|month)/i, /revenue.*report/i],
+  handler: async (ctx) => {
+    // Fast deterministic database lookup (0 LLM tokens, <1ms)
+    const metrics = await getSalesMetrics(ctx.params.period || 'today', ctx.roleData?.branch);
+    return `*Sales Summary (${ctx.params.period || 'Today'})*\n• Revenue: $${metrics.revenue.toLocaleString()}\n• Orders: ${metrics.orders}`;
+  },
+});
+```
+
 ---
 
 ## Conversational AI & Grounding
@@ -224,21 +259,22 @@ alexa/
 │   ├── business.md             # Markdown business profile & policies
 │   └── faq.json                # Structured FAQ entries
 ├── public/dashboard/           # Apple HIG Quiet Web Dashboard
-│   ├── css/dashboard.css       # Unified Apple design tokens & grouped list styles
+│   ├── css/                    # Modular CSS architecture (13 sub-sheets)
 │   ├── js/                     # Modular frontend with Visibility API guard
 │   └── index.html              # Bento grid layout with progressive disclosure
 ├── src/
 │   ├── commands/               # Modular commands (general, ai, automation)
 │   ├── config/                 # Zod environment schemas & settings manager
-│   ├── core/                   # Baileys socket, serializer, & command manager
+│   ├── core/                   # Baileys socket, serializer, & command manager (RBAC Guard)
 │   │   └── store/              # Embedded SQLite core with Read-Only Guard
 │   ├── handlers/               # Inbound message event dispatcher (0s markRead)
 │   ├── queue/                  # Anti-ban queue throttler with jitter
 │   ├── server/                 # Fastify REST API, Swagger UI, & Web Dashboard
 │   │   └── routes/api/         # Modular endpoints (sync, messages, sessions, etc.)
 │   ├── services/
-│   │   ├── ai/                 # Multi-provider LLM engine, memory, & tools
+│   │   ├── ai/                 # Multi-provider LLM, Slim Intent Router, & tools
 │   │   ├── alerts/             # Real-time owner notifications & payment forwarding
+│   │   ├── chat/               # Persistent chat activity logger
 │   │   ├── messages/           # Message lifecycle tracker & LRU cache
 │   │   └── sync/               # Incremental data catch-up reconciler worker
 │   ├── types/                  # TypeScript interfaces & definitions
