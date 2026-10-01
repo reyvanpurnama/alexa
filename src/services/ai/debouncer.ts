@@ -1,9 +1,11 @@
 import type { SerializedMessage } from '../../core/serializer.js';
 import { aiService } from './index.js';
 import { takeoverManager } from './takeover.js';
+import { conversationMemory } from './memory.js';
+import { intentRouter } from './intentRouter.js';
+import { commandManager } from '../../core/commandManager.js';
 import { chatLogger } from '../chat/chatLogger.js';
 import { logger } from '../../utils/logger.js';
-
 import { config } from '../../config/index.js';
 
 interface BufferedSession {
@@ -87,6 +89,59 @@ export class MessageDebouncer {
 
     const startTime = Date.now();
     try {
+      // ─────────────────────────────────────────────────────────────
+      // 1. Slim Intent Router Hook (Deterministic & Role-Scoped)
+      // ─────────────────────────────────────────────────────────────
+      const roleResolution = await commandManager.resolveRole(userId, session.lastMessage);
+      const intentResult = await intentRouter.route({
+        prompt: combinedPrompt,
+        role: roleResolution.role,
+        roleData: roleResolution.data,
+        m: session.lastMessage,
+        sock: session.lastMessage.sock,
+      });
+
+      if (intentResult.handled) {
+        clearInterval(typingHeartbeat);
+        await session.lastMessage.sendTyping(false);
+
+        const latencyMs =
+          intentResult.latencyMs !== undefined ? intentResult.latencyMs : Date.now() - startTime;
+        const response = intentResult.response || '';
+
+        logger.info(
+          {
+            userId,
+            intent: intentResult.intentName,
+            tier: intentResult.tier,
+            latencyMs,
+          },
+          '[SlimIntentRouter] Handled inbound message via intent'
+        );
+
+        if (response) {
+          conversationMemory.addMessage(userId, 'user', combinedPrompt);
+          conversationMemory.addMessage(userId, 'assistant', response);
+
+          chatLogger.log({
+            sessionId: userId,
+            senderNumber: userId,
+            senderName: session.lastMessage.pushName || userId,
+            userMessage: combinedPrompt,
+            aiResponse: response,
+            status: 'replied',
+            latencyMs,
+            source: 'intent',
+          });
+
+          await session.lastMessage.reply(response, { withFooter: intentResult.withFooter });
+        }
+        return;
+      }
+
+      // ─────────────────────────────────────────────────────────────
+      // 2. Fallback: Full Conversational AI Generator
+      // ─────────────────────────────────────────────────────────────
       const result = await aiService.generateResponse(combinedPrompt, {
         sessionId: userId,
         senderName: session.lastMessage.pushName || userId,

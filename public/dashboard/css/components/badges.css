@@ -124,6 +124,12 @@
   border: 1px solid rgba(10, 132, 255, 0.25);
 }
 
+.chat-pill.intent {
+  background: rgba(191, 90, 242, 0.12);
+  color: #bf5af2;
+  border: 1px solid rgba(191, 90, 242, 0.25);
+}
+
 /* AI Chips */
 .ai-chips-container {
   display: flex;

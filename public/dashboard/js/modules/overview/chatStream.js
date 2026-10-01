@@ -67,7 +67,10 @@ export async function fetchRecentChats(isSilent = false) {
         let pillClass = 'replied';
         let pillLabel = 'AI Dijawab';
 
-        if (chat.status === 'error') {
+        if (chat.source === 'intent') {
+          pillClass = 'intent';
+          pillLabel = '⚡ Slim Intent';
+        } else if (chat.status === 'error') {
           pillClass = 'error';
           pillLabel = 'Kendala';
         } else if (chat.status === 'muted') {

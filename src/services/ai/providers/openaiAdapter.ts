@@ -12,6 +12,10 @@ export interface OpenAIAdapterParams {
   apiKey: string;
   model: string;
   baseUrl?: string;
+  disableTools?: boolean;
+  temperature?: number;
+  maxTokens?: number;
+  responseFormat?: any;
 }
 
 export async function generateOpenAICompatible(
@@ -27,6 +31,10 @@ export async function generateOpenAICompatible(
     apiKey,
     model: configuredModel,
     baseUrl: customBaseUrl,
+    disableTools,
+    temperature = 0.7,
+    maxTokens,
+    responseFormat,
   } = params;
 
   let baseURL: string | undefined = customBaseUrl || undefined;
@@ -83,7 +91,7 @@ export async function generateOpenAICompatible(
   // Append current user prompt
   messages.push({ role: 'user', content: prompt });
 
-  const supportsTools = provider === 'groq' || provider === 'openai';
+  const supportsTools = !disableTools && (provider === 'groq' || provider === 'openai');
 
   const createCompletionWithRecovery = async (completionParams: any): Promise<any> => {
     try {
@@ -130,13 +138,21 @@ export async function generateOpenAICompatible(
     }
   };
 
-  let currentCompletion = await createCompletionWithRecovery({
+  const completionPayload: any = {
     model,
     messages,
-    temperature: 0.7,
+    temperature,
     tools: supportsTools ? aiTools : undefined,
     tool_choice: supportsTools ? 'auto' : undefined,
-  });
+  };
+  if (maxTokens) {
+    completionPayload.max_tokens = maxTokens;
+  }
+  if (responseFormat) {
+    completionPayload.response_format = responseFormat;
+  }
+
+  let currentCompletion = await createCompletionWithRecovery(completionPayload);
 
   let iterations = 0;
   const maxIterations = 3;

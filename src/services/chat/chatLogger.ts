@@ -11,7 +11,7 @@ export interface ChatLogEntry {
   aiResponse: string | null;
   status: 'replied' | 'error' | 'muted' | 'command';
   latencyMs: number | null;
-  source: 'ai' | 'command' | 'system';
+  source: 'ai' | 'command' | 'system' | 'intent';
   createdAt: string;
 }
 
@@ -89,7 +89,7 @@ export class ChatLogger {
     aiResponse?: string | null;
     status?: 'replied' | 'error' | 'muted' | 'command';
     latencyMs?: number | null;
-    source?: 'ai' | 'command' | 'system';
+    source?: 'ai' | 'command' | 'system' | 'intent';
   }): ChatLogEntry {
     const entry: ChatLogEntry = {
       id: randomUUID(),

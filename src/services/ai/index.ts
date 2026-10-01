@@ -11,15 +11,30 @@ import { discoverAvailableModels, type DiscoveredModel, type ModelDiscoveryResul
 import { generateGemini } from './providers/geminiAdapter.js';
 import { generateOpenAICompatible } from './providers/openaiAdapter.js';
 
+import {
+  intentRouter,
+  SlimIntentRouter,
+  type IntentDefinition,
+  type IntentContext,
+  type IntentResult,
+  type IntentParamDef,
+} from './intentRouter.js';
+
 export {
   conversationMemory,
   takeoverManager,
   messageDebouncer,
   knowledgeManager,
+  intentRouter,
+  SlimIntentRouter,
   discoverAvailableModels,
   type ChatMessage,
   type DiscoveredModel,
   type ModelDiscoveryResult,
+  type IntentDefinition,
+  type IntentContext,
+  type IntentResult,
+  type IntentParamDef,
 };
 
 export interface AIOptions {
