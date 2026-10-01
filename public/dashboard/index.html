@@ -312,10 +312,11 @@
               <span class="ai-stat-chip" id="kb-char-count">-- karakter terindeks</span>
             </div>
 
-            <!-- Sub-Segmented Control (Dual Mode Switcher) -->
+            <!-- Sub-Segmented Control (Triple Mode Switcher) -->
             <div class="sub-seg-control" role="tablist">
               <button class="sub-seg-btn active" id="sub-seg-doc" data-subtab="view-kb-doc" role="tab">Dokumen Profil (Markdown)</button>
               <button class="sub-seg-btn" id="sub-seg-faq" data-subtab="view-kb-faq" role="tab">Kartu FAQ Resmi (<span id="faq-count-badge">0</span>)</button>
+              <button class="sub-seg-btn" id="sub-seg-intents" data-subtab="view-kb-intents" role="tab">Intent Router ⚡ (<span id="intent-count-badge">0</span>)</button>
             </div>
 
             <!-- VIEW 1: DOKUMEN PROFIL (MARKDOWN) -->
@@ -358,6 +359,34 @@
               <div id="faq-items-list" class="faq-list">
                 <div style="text-align: center; color: var(--text-tertiary); font-size: 12px; padding: 20px;">
                   Memuat daftar FAQ...
+                </div>
+              </div>
+            </div>
+
+            <!-- VIEW 3: INTENT ROUTER (FAST 0-TOKEN CATALOG) -->
+            <div id="view-kb-intents" class="sub-tab-view">
+              <div class="intent-catalog-header">
+                <div>
+                  <div style="font-size: 13px; font-weight: 600; color: var(--text-primary); margin-bottom: 2px;">
+                    Intent Router Otomatis (Tier 1 Pattern &amp; Tier 2 Regex)
+                  </div>
+                  <div style="font-size: 12px; color: var(--text-secondary);">
+                    Mencegat pertanyaan standar dengan eksekusi instan (&lt;1ms) dan 0 konsumsi token AI.
+                  </div>
+                </div>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <span style="font-size: 12px; color: var(--text-secondary); font-weight: 500;">Status Router:</span>
+                  <label class="switch">
+                    <input type="checkbox" id="toggle-intent-router" checked />
+                    <span class="slider"></span>
+                  </label>
+                </div>
+              </div>
+
+              <!-- List Kartu Intent -->
+              <div id="intent-cards-container" class="intent-cards-list">
+                <div style="text-align: center; color: var(--text-tertiary); font-size: 12px; padding: 20px;">
+                  Memuat katalog intent...
                 </div>
               </div>
             </div>
@@ -446,10 +475,24 @@
           <!-- Card 2: Live Inspector Simulator (Verifikasi Respons) -->
           <div class="bento-card">
             <div>
-              <div class="card-title" style="margin-bottom: 4px;">Simulator Verifikasi AI</div>
+              <div class="card-title" style="margin-bottom: 4px;">Simulator Verifikasi AI &amp; Intent</div>
               <p style="font-size: 12px; color: var(--text-secondary); margin-bottom: 12px; line-height: 1.4;">
-                Verifikasi akurasi respons bot dengan basis pengetahuan terkini secara instan sebelum menjawab pesan riil pelanggan.
+                Verifikasi akurasi respons bot, pengalihan intent router 0-token, dan hak akses peran kontak sebelum membalas pesan riil.
               </p>
+
+              <!-- Role Selector Bar for Simulator RBAC Verification -->
+              <div class="sim-role-bar">
+                <div class="sim-role-label">
+                  <span>Simulasi Peran Kontak:</span>
+                </div>
+                <select id="sim-select-role" class="form-input" style="width: auto; padding: 4px 10px; font-size: 11.5px; border-radius: 6px;">
+                  <option value="PUBLIC">PUBLIC (Pelanggan Umum)</option>
+                  <option value="VIP">VIP / Member</option>
+                  <option value="STAFF">STAFF / Kasir</option>
+                  <option value="ADMIN">ADMIN (Manajemen)</option>
+                  <option value="OWNER">OWNER (Pemilik Penuh)</option>
+                </select>
+              </div>
 
               <div class="form-group" style="margin-bottom: 8px;">
                 <label class="form-label" for="ai-test-prompt">Pertanyaan Uji Coba</label>
@@ -460,8 +503,8 @@
               <div class="ai-chips-container" style="margin-bottom: 12px;">
                 <span class="ai-chip" data-prompt="Berapa nomor rekening resmi pembayaran toko?">💳 Rekening</span>
                 <span class="ai-chip" data-prompt="Jam berapa toko buka dan beroperasi?">🕒 Jam Operasional</span>
-                <span class="ai-chip" data-prompt="Bagaimana kebijakan garansi dan pengembalian barang?">🛡️ Garansi</span>
-                <span class="ai-chip" data-prompt="Berapa ongkos kirim dan jasa kurir yang tersedia?">📦 Pengiriman</span>
+                <span class="ai-chip" data-prompt="Status server dan bot sekarang">📊 Status Server</span>
+                <span class="ai-chip" data-prompt="Ringkasan transaksi dan penjualan hari ini">📈 Ringkasan Transaksi</span>
               </div>
 
               <button class="btn btn-primary" id="btn-test-ai" style="width: 100%; margin-bottom: 12px;">
@@ -472,7 +515,10 @@
               <div>
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
                   <label class="form-label" style="margin-bottom: 0;">Respons Asisten (Live)</label>
-                  <span id="ai-latency-tag" class="ai-latency-pill" style="display: none;">⚡ Ready</span>
+                  <div style="display: flex; align-items: center; gap: 6px;">
+                    <span id="sim-tier-badge" class="tier-badge" style="display: none;"></span>
+                    <span id="ai-latency-tag" class="ai-latency-pill" style="display: none;">⚡ Ready</span>
+                  </div>
                 </div>
                 <div id="ai-response-box" class="ai-response-card">Ketik pertanyaan atau klik salah satu topik di atas untuk memverifikasi data respons bot.</div>
               </div>
@@ -486,29 +532,37 @@
     <!-- TAB 5: PENGATURAN & HAK AKSES (SETTINGS) -->
     <div id="tab-settings" class="tab-view">
       <div class="bento-grid">
-        <!-- Col-7: Pengelola & Hak Akses (Owners & Roles) -->
+        <!-- Col-7: Hak Akses & Peran Pengguna (RBAC) -->
         <div class="bento-card col-7">
           <div>
             <div class="kb-card-header">
               <div>
-                <div class="card-title" style="margin-bottom: 4px;">Pengelola & Hak Akses</div>
+                <div class="card-title" style="margin-bottom: 4px;">Hak Akses &amp; Peran Pengguna (RBAC)</div>
                 <div style="font-size: 12px; color: var(--text-secondary); line-height: 1.4;">
-                  Nomor terdaftar berwenang menjalankan perintah privat (<code>/broadcast</code>, <code>/logout</code>) serta menerima notifikasi eskalasi bantuan pelanggan.
+                  Tentukan peran granular (Owner, Admin, Staff, VIP, Public) untuk mengontrol akses perintah, intent eksekutif, dan wewenang bot.
                 </div>
               </div>
-              <span id="owners-count-badge" class="ai-stat-chip">0 Pengelola</span>
+              <span id="owners-count-badge" class="ai-stat-chip">0 Pengguna Berperan</span>
             </div>
 
             <div id="owners-list" class="owner-list">
-              <div style="text-align: center; color: var(--text-tertiary); font-size: 12px; padding: 14px;">Memuat daftar pengelola...</div>
+              <div style="text-align: center; color: var(--text-tertiary); font-size: 12px; padding: 14px;">Memuat daftar peran...</div>
             </div>
           </div>
 
           <div style="margin-top: 14px; border-top: 1px solid var(--border-subtle); padding-top: 14px;">
-            <label class="form-label" for="new-owner-input">Tambah Nomor Pengelola Baru</label>
-            <div style="display: flex; gap: 8px;">
-              <input type="text" id="new-owner-input" class="form-input" placeholder="contoh: 628123456789" style="flex: 1;" />
-              <button class="btn btn-primary" id="btn-add-owner" style="white-space: nowrap;">+ Tambah</button>
+            <label class="form-label" style="margin-bottom: 8px;">Tambah / Tetapkan Peran Pengguna</label>
+            <div style="display: grid; grid-template-columns: 2fr 1.5fr 1.2fr auto; gap: 8px; align-items: center;">
+              <input type="text" id="new-owner-input" class="form-input" placeholder="Nomor WhatsApp (misal: 628123456789)" style="font-size: 12px;" />
+              <input type="text" id="new-role-name-input" class="form-input" placeholder="Nama / Catatan (opsional)" style="font-size: 12px;" />
+              <select id="new-role-select" class="form-input" style="font-size: 12px;">
+                <option value="OWNER">OWNER</option>
+                <option value="ADMIN">ADMIN</option>
+                <option value="STAFF">STAFF</option>
+                <option value="VIP">VIP</option>
+                <option value="PUBLIC">PUBLIC</option>
+              </select>
+              <button class="btn btn-primary" id="btn-add-owner" style="white-space: nowrap; font-size: 12px; padding: 8px 14px;">+ Tetapkan</button>
             </div>
           </div>
         </div>

@@ -27,6 +27,9 @@ export function initSimulator() {
 
       const box = document.getElementById('ai-response-box');
       const latencyTag = document.getElementById('ai-latency-tag');
+      const tierBadge = document.getElementById('sim-tier-badge');
+      const roleSelect = document.getElementById('sim-select-role');
+      const simulatedRole = roleSelect?.value || 'PUBLIC';
 
       btnTestQuery.disabled = true;
       btnTestQuery.textContent = 'Memproses Jawaban...';
@@ -35,12 +38,13 @@ export function initSimulator() {
         box.style.color = 'var(--text-tertiary)';
       }
       if (latencyTag) latencyTag.style.display = 'none';
+      if (tierBadge) tierBadge.style.display = 'none';
 
       const startTime = performance.now();
       try {
         const data = await fetchApi('/api/ai/query', {
           method: 'POST',
-          body: { prompt },
+          body: { prompt, simulatedRole },
         });
 
         const elapsed = (performance.now() - startTime).toFixed(0);
@@ -54,6 +58,20 @@ export function initSimulator() {
           if (latencyTag) {
             latencyTag.style.display = 'inline-flex';
             latencyTag.textContent = `⚡ ${data.latencyMs ?? elapsed}ms`;
+          }
+
+          if (tierBadge) {
+            tierBadge.style.display = 'inline-flex';
+            if (data.handled) {
+              tierBadge.className = 'tier-badge tier-intent-1';
+              tierBadge.textContent = `⚡ Tier 1 Intent: ${data.intentName || 'Matched'} (0 tokens)`;
+            } else if (data.tier === 'tier2_regex') {
+              tierBadge.className = 'tier-badge tier-intent-2';
+              tierBadge.textContent = `⚡ Tier 2 Intent: ${data.intentName || 'Matched'}`;
+            } else {
+              tierBadge.className = 'tier-badge tier-full-ai';
+              tierBadge.textContent = '🤖 Full Conversational AI';
+            }
           }
         } else {
           if (box) {

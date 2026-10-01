@@ -152,4 +152,60 @@ export const settingsRoutes: FastifyPluginAsync = async (fastify) => {
       });
     }
   });
+
+  // GET /api/settings/roles - List all configured RBAC user roles & owners
+  fastify.get('/api/settings/roles', async (_request, reply) => {
+    return reply.send({
+      success: true,
+      userRoles: settingsManager.getUserRoles(),
+      ownerNumbers: settingsManager.getSettings().ownerNumbers,
+    });
+  });
+
+  // POST /api/settings/roles - Assign or update role for a phone number
+  fastify.post('/api/settings/roles', async (request, reply) => {
+    const body = (request.body as { phone?: string; role?: string; name?: string; data?: Record<string, any> }) || {};
+    if (!body.phone || !body.role) {
+      return reply.code(400).send({
+        success: false,
+        error: 'Nomor telepon dan peran (role) wajib diisi.',
+      });
+    }
+
+    try {
+      const record = settingsManager.setUserRole(body.phone, body.role, body.name, body.data);
+      return reply.send({
+        success: true,
+        message: `Peran ${record.role} berhasil ditetapkan ke +${body.phone.replace(/\D/g, '')}`,
+        record,
+        userRoles: settingsManager.getUserRoles(),
+        ownerNumbers: settingsManager.getSettings().ownerNumbers,
+      });
+    } catch (err: unknown) {
+      return reply.code(400).send({
+        success: false,
+        error: (err as Error).message || 'Gagal menetapkan peran pengguna',
+      });
+    }
+  });
+
+  // DELETE /api/settings/roles/:phoneNumber - Remove role assignment
+  fastify.delete('/api/settings/roles/:phoneNumber', async (request, reply) => {
+    const { phoneNumber } = request.params as { phoneNumber: string };
+
+    try {
+      const removed = settingsManager.removeUserRole(phoneNumber);
+      return reply.send({
+        success: true,
+        message: removed ? 'Peran pengguna berhasil dihapus.' : 'Nomor tidak ditemukan dalam daftar peran.',
+        userRoles: settingsManager.getUserRoles(),
+        ownerNumbers: settingsManager.getSettings().ownerNumbers,
+      });
+    } catch (err: unknown) {
+      return reply.code(400).send({
+        success: false,
+        error: (err as Error).message || 'Gagal menghapus peran pengguna',
+      });
+    }
+  });
 };

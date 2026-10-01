@@ -5,6 +5,7 @@ import { settingsManager } from '../../config/settingsManager.js';
 import { config } from '../../config/index.js';
 import { generateGemini } from './providers/geminiAdapter.js';
 import { generateOpenAICompatible } from './providers/openaiAdapter.js';
+import { localStore } from '../../core/store/localStore.js';
 
 export interface IntentParamDef {
   name: string;
@@ -59,6 +60,83 @@ export type CustomIntentClassifier = (
 export class SlimIntentRouter {
   private intents = new Map<string, IntentDefinition>();
   private customClassifier: CustomIntentClassifier | null = null;
+
+  constructor() {
+    this.registerDefaultIntents();
+  }
+
+  /**
+   * Registers default core enterprise intents (Business Hours, System Status, Sales Summary)
+   */
+  private registerDefaultIntents(): void {
+    // 1. Business Hours (Public)
+    this.registerIntent({
+      name: 'business_hours',
+      description: 'Retrieve verified store opening hours and operational schedule',
+      roles: ['*'],
+      patterns: [/jam.*(buka|operasional|kerja|tutup)/i, /kapan.*buka/i, /jadwal.*toko/i],
+      handler: async () => {
+        return `*Jam Operasional Bisnis*\n• Senin – Jumat: 08:00 – 21:00 WIB\n• Sabtu – Minggu: 09:00 – 20:00 WIB\n\n_Untuk bantuan langsung dengan staf kami, silakan gunakan perintah /human._`;
+      },
+    });
+
+    // 2. System Status (Admin / Staff / Owner)
+    this.registerIntent({
+      name: 'system_status',
+      description: 'Inspect bot operational health, engine uptime, and active platform',
+      roles: ['ADMIN', 'STAFF', 'OWNER', 'EXECUTIVE'],
+      patterns: [/status.*(sistem|bot|server)/i, /sistem.*online/i, /kondisi.*server/i],
+      handler: async () => {
+        const uptimeSec = Math.floor(process.uptime());
+        const hours = Math.floor(uptimeSec / 3600);
+        const mins = Math.floor((uptimeSec % 3600) / 60);
+        return `*Status Operasional Sistem*\n• Layanan: Online (Optimal)\n• Uptime: ${hours}j ${mins}m\n• Platform: ${process.platform} (${process.arch})\n• Engine: Alexa 1.0 (Slim Intent Router Active)`;
+      },
+    });
+
+    // 3. Sales Summary (Admin / Owner / Executive)
+    this.registerIntent({
+      name: 'sales_summary',
+      description: 'Retrieve periodic sales overview and transaction metrics',
+      roles: ['ADMIN', 'OWNER', 'EXECUTIVE'],
+      patterns: [/rekap.*(omzet|penjualan|sales)/i, /sales.*(today|bulan|month)/i, /omzet.*hari/i],
+      parameters: {
+        period: {
+          name: 'period',
+          type: 'string',
+          description: 'Timeframe period (today, this_week, this_month)',
+          enum: ['today', 'this_week', 'this_month'],
+        },
+      },
+      handler: async (ctx) => {
+        const period = ctx.params.period || 'today';
+        const label = period === 'this_month' ? 'Bulan Ini' : period === 'this_week' ? 'Minggu Ini' : 'Hari Ini';
+
+        try {
+          const db = localStore.getDatabase();
+          if (db) {
+            const hasTable = db
+              .prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='pos_transactions'")
+              .get();
+            if (hasTable) {
+              const row: any = db
+                .prepare(
+                  `SELECT COUNT(id) as total_tx, COALESCE(SUM(total_amount), 0) as total_omzet 
+                   FROM pos_transactions 
+                   WHERE ${period === 'this_month' ? "created_at >= date('now', 'start of month')" : "created_at >= date('now')"}`
+                )
+                .get();
+
+              const formattedOmzet = Number(row?.total_omzet || 0).toLocaleString('id-ID');
+              return `*Rekap Penjualan (${label})*\n• Transaksi: ${row?.total_tx || 0} struk\n• Total Omzet: Rp ${formattedOmzet}\n\n_Data terverifikasi dari edge replica SQLite._`;
+            }
+          }
+        } catch {}
+
+        return `*Rekap Penjualan (${label})*\n• Total Transaksi: 0\n• Total Omzet: Rp 0\n\n_Belum ada transaksi tercatat untuk periode ini._`;
+      },
+    });
+  }
 
   /**
    * Registers a single intent definition

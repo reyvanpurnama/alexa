@@ -6,12 +6,21 @@ import { messageQueue } from '../queue/messageQueue.js';
 
 export type AIProvider = 'gemini' | 'openai' | 'groq' | 'deepseek' | 'ollama' | 'custom';
 
+export interface UserRoleRecord {
+  role: string;
+  name?: string;
+  data?: Record<string, any>;
+  updatedAt?: string;
+}
+
 export interface DynamicSettings {
   botName: string;
   prefix: string;
   footerText: string;
   ownerNumbers: string[];
+  userRoles?: Record<string, UserRoleRecord>;
   aiAutoReply: boolean;
+  enableIntentRouter?: boolean;
   messageDelayMs: number;
   aiProvider: AIProvider;
   aiApiKey?: string;
@@ -41,7 +50,9 @@ export class SettingsManager {
       prefix: config.PREFIX,
       footerText: config.FOOTER_TEXT,
       ownerNumbers: [...config.OWNER_NUMBERS],
+      userRoles: {},
       aiAutoReply: config.AI_AUTO_REPLY,
+      enableIntentRouter: true,
       messageDelayMs: config.MESSAGE_DELAY_MS,
       aiProvider: config.AI_PROVIDER,
       aiApiKey: config.AI_API_KEY,
@@ -142,6 +153,61 @@ export class SettingsManager {
   isOwner(phoneOrJid: string): boolean {
     const clean = phoneOrJid.split('@')[0].split(':')[0].replace(/\D/g, '');
     return this.settings.ownerNumbers.includes(clean);
+  }
+
+  /**
+   * Retrieves all dynamic role assignments configured from the dashboard
+   */
+  getUserRoles(): Record<string, UserRoleRecord> {
+    return { ...(this.settings.userRoles || {}) };
+  }
+
+  /**
+   * Sets or updates role assignment for a given phone number
+   */
+  setUserRole(phone: string, role: string, name?: string, data?: Record<string, any>): UserRoleRecord {
+    const cleanPhone = phone.trim().replace(/\D/g, '');
+    if (!cleanPhone) {
+      throw new Error('Nomor telepon tidak valid.');
+    }
+
+    const upperRole = (role || 'PUBLIC').toUpperCase();
+    const roles = { ...(this.settings.userRoles || {}) };
+    const record: UserRoleRecord = {
+      role: upperRole,
+      name: name?.trim() || undefined,
+      data: data || undefined,
+      updatedAt: new Date().toISOString(),
+    };
+
+    roles[cleanPhone] = record;
+
+    // If role is OWNER, ensure number is in ownerNumbers
+    if (upperRole === 'OWNER' && !this.settings.ownerNumbers.includes(cleanPhone)) {
+      this.settings.ownerNumbers.push(cleanPhone);
+    }
+
+    this.settings.userRoles = roles;
+    this.saveSettingsToFile(this.settings);
+    logger.info(`[SettingsManager] Assigned role ${upperRole} to +${cleanPhone}`);
+
+    return record;
+  }
+
+  /**
+   * Removes role assignment for a given phone number
+   */
+  removeUserRole(phone: string): boolean {
+    const cleanPhone = phone.trim().replace(/\D/g, '');
+    const roles = { ...(this.settings.userRoles || {}) };
+    if (!roles[cleanPhone]) return false;
+
+    delete roles[cleanPhone];
+    this.settings.userRoles = roles;
+    this.saveSettingsToFile(this.settings);
+    logger.info(`[SettingsManager] Removed role assignment for +${cleanPhone}`);
+
+    return true;
   }
 
   /**

@@ -1,5 +1,6 @@
 import type { FastifyPluginAsync } from 'fastify';
-import { knowledgeManager, aiService } from '../../../services/ai/index.js';
+import { knowledgeManager, aiService, intentRouter } from '../../../services/ai/index.js';
+import { settingsManager } from '../../../config/settingsManager.js';
 import { saveBusinessDocSchema, faqItemSchema } from '../../schemas/apiSchemas.js';
 
 export const aiRoutes: FastifyPluginAsync = async (fastify) => {
@@ -136,9 +137,41 @@ export const aiRoutes: FastifyPluginAsync = async (fastify) => {
     });
   });
 
-  // POST /api/ai/query - Test Grounded AI Query
+  // GET /api/ai/intents - List all registered intents for the Intent Router catalog
+  fastify.get('/api/ai/intents', async (_request, reply) => {
+    const all = intentRouter.getAllIntents();
+    const mapped = all.map((i) => ({
+      name: i.name,
+      description: i.description,
+      roles: i.roles,
+      patterns: (i.patterns || []).map((p) => (p instanceof RegExp ? p.source : String(p))),
+      parameters: i.parameters || {},
+    }));
+
+    return reply.send({
+      success: true,
+      intents: mapped,
+      total: mapped.length,
+      enabled: settingsManager.getSettings().enableIntentRouter !== false,
+    });
+  });
+
+  // PUT /api/ai/intents/toggle - Toggle Slim Intent Router enabled/disabled
+  fastify.put('/api/ai/intents/toggle', async (request, reply) => {
+    const { enabled } = (request.body as { enabled?: boolean }) || {};
+    const updated = settingsManager.updateSettings({ enableIntentRouter: Boolean(enabled) });
+    return reply.send({
+      success: true,
+      enabled: updated.enableIntentRouter !== false,
+      message: `Slim Intent Router ${updated.enableIntentRouter !== false ? 'diaktifkan' : 'dinonaktifkan'}.`,
+    });
+  });
+
+  // POST /api/ai/query - Test Grounded AI Query with simulated role & intent routing
   fastify.post('/api/ai/query', async (request, reply) => {
-    const { prompt } = (request.body as { prompt?: string }) || {};
+    const { prompt, simulatedRole } =
+      (request.body as { prompt?: string; simulatedRole?: string }) || {};
+
     if (!prompt || !prompt.trim()) {
       return reply.code(400).send({
         success: false,
@@ -146,16 +179,64 @@ export const aiRoutes: FastifyPluginAsync = async (fastify) => {
       });
     }
 
+    const cleanPrompt = prompt.trim();
+    const targetRole = (simulatedRole || 'PUBLIC').toUpperCase();
+    const startTime = Date.now();
+
     try {
-      const startTime = Date.now();
-      const result = await aiService.generateResponse(prompt.trim());
+      // 1. Pre-flight check: Slim Intent Router Hook (if enabled)
+      if (settingsManager.getSettings().enableIntentRouter !== false) {
+        const mockMsg: any = {
+          from: 'simulator@test',
+          senderNumber: 'simulator',
+          isGroup: false,
+          pushName: `Simulator (${targetRole})`,
+          reply: async (text: string) => text,
+          sendTyping: async () => {},
+          markRead: async () => {},
+          sock: {} as any,
+        };
+
+        const intentResult = await intentRouter.route({
+          prompt: cleanPrompt,
+          role: targetRole,
+          roleData: { simulator: true },
+          m: mockMsg,
+          sock: {} as any,
+        });
+
+        if (intentResult.handled) {
+          const latencyMs =
+            intentResult.latencyMs !== undefined ? intentResult.latencyMs : Date.now() - startTime;
+
+          return reply.send({
+            success: true,
+            prompt: cleanPrompt,
+            response: intentResult.response || '',
+            withFooter: intentResult.withFooter || false,
+            usedTools: false,
+            handled: true,
+            intentName: intentResult.intentName,
+            tier: intentResult.tier || 'tier1_pattern',
+            simulatedRole: targetRole,
+            latencyMs,
+          });
+        }
+      }
+
+      // 2. Fallback: Full Conversational AI Generator
+      const result = await aiService.generateResponse(cleanPrompt);
       const latencyMs = Date.now() - startTime;
+
       return reply.send({
         success: true,
-        prompt: prompt.trim(),
+        prompt: cleanPrompt,
         response: result.text,
         withFooter: result.withFooter,
         usedTools: result.usedTools,
+        handled: false,
+        tier: 'full_ai',
+        simulatedRole: targetRole,
         latencyMs,
       });
     } catch (err: unknown) {

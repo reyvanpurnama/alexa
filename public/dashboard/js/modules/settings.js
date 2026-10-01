@@ -1,45 +1,11 @@
 import { fetchApi, showToast } from '../api.js';
+import { initRoles, fetchRoles } from './settings/roles.js';
 
 export function initSettings() {
-  // Add Owner Number
-  const btnAddOwner = document.getElementById('btn-add-owner');
-  if (btnAddOwner) {
-    btnAddOwner.addEventListener('click', async () => {
-      const input = document.getElementById('new-owner-input');
-      const phoneNumber = input?.value.trim();
+  // 1. Initialize RBAC Roles & Owners Manager
+  initRoles();
 
-      if (!phoneNumber || phoneNumber.length < 8) {
-        showToast('Masukkan nomor telepon pengelola yang valid (minimal 8 digit)', true);
-        input?.focus();
-        return;
-      }
-
-      btnAddOwner.disabled = true;
-      btnAddOwner.textContent = 'Menyimpan...';
-
-      try {
-        const data = await fetchApi('/api/settings/owners', {
-          method: 'POST',
-          body: { phoneNumber },
-        });
-
-        if (data.success) {
-          showToast(`Nomor pengelola +${phoneNumber.replace(/\D/g, '')} berhasil ditambahkan`);
-          if (input) input.value = '';
-          fetchSettings();
-        } else {
-          showToast(data.error || 'Gagal menambahkan pengelola', true);
-        }
-      } catch (err) {
-        showToast('Kesalahan jaringan saat menambahkan pengelola', true);
-      } finally {
-        btnAddOwner.disabled = false;
-        btnAddOwner.textContent = '+ Tambah';
-      }
-    });
-  }
-
-  // Toggle AI Auto-Reply Switch
+  // 2. Toggle AI Auto-Reply Switch
   const toggleAutoReply = document.getElementById('toggle-ai-autoreply');
   if (toggleAutoReply) {
     toggleAutoReply.addEventListener('change', async () => {
@@ -169,69 +135,7 @@ export async function fetchSettings() {
       if (delayDisplay) delayDisplay.textContent = `${(s.messageDelayMs / 1000).toFixed(1)} detik`;
     }
 
-    // 4. Render Owner Numbers List
-    const ownersListEl = document.getElementById('owners-list');
-    const countBadge = document.getElementById('owners-count-badge');
-    const owners = s.ownerNumbers || [];
-
-    if (countBadge) countBadge.textContent = `${owners.length} Pengelola`;
-
-    if (!ownersListEl) return;
-    ownersListEl.innerHTML = '';
-
-    if (owners.length === 0) {
-      ownersListEl.innerHTML =
-        '<div style="text-align: center; color: var(--text-tertiary); font-size: 12px; padding: 12px;">Belum ada nomor pengelola terdaftar.</div>';
-      return;
-    }
-
-    owners.forEach((num, idx) => {
-      const isPrimary = idx === 0;
-      const roleLabel = isPrimary ? '👑 Pemilik Utama' : '🛡️ Admin Pengelola';
-      const item = document.createElement('div');
-      item.className = 'owner-card-item';
-
-      item.innerHTML = `
-        <div class="owner-identity">
-          <div class="owner-symbol-avatar">${isPrimary ? '👑' : '🛡️'}</div>
-          <div>
-            <div class="owner-phone-text">+${num}</div>
-            <div class="owner-role-tag">${roleLabel}</div>
-          </div>
-        </div>
-        <div>
-          ${
-            owners.length > 1
-              ? `<button class="btn btn-ghost btn-sm" data-action="delete-owner" data-phone="${num}" style="color: var(--accent-red); font-size: 11px;">Hapus</button>`
-              : '<span style="font-size: 11px; color: var(--text-tertiary);">Wajib Minimal 1</span>'
-          }
-        </div>
-      `;
-
-      ownersListEl.appendChild(item);
-    });
-
-    // Attach Delete Owner Listeners
-    ownersListEl.querySelectorAll('[data-action="delete-owner"]').forEach((btn) => {
-      btn.addEventListener('click', async () => {
-        const phone = btn.getAttribute('data-phone');
-        if (!phone) return;
-
-        const confirmed = window.confirm(`Cabut hak pengelola dari nomor +${phone}?`);
-        if (!confirmed) return;
-
-        try {
-          const result = await fetchApi(`/api/settings/owners/${phone}`, { method: 'DELETE' });
-          if (result.success) {
-            showToast(`Nomor +${phone} dihapus dari daftar pengelola`);
-            fetchSettings();
-          } else {
-            showToast(result.error || 'Gagal menghapus nomor pengelola', true);
-          }
-        } catch (err) {
-          showToast('Kesalahan jaringan saat menghapus pengelola', true);
-        }
-      });
-    });
+    // 4. Render Dynamic RBAC Roles & Owners List
+    fetchRoles();
   } catch (err) {}
 }

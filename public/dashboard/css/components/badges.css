@@ -130,6 +130,90 @@
   border: 1px solid rgba(191, 90, 242, 0.25);
 }
 
+/* Apple Semantic Role Pills */
+.role-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10.5px;
+  font-weight: 600;
+  padding: 2.5px 8px;
+  border-radius: var(--radius-pill);
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.role-pill.owner,
+.role-pill.role-owner {
+  background: rgba(10, 132, 255, 0.12);
+  color: #0a84ff;
+  border: 1px solid rgba(10, 132, 255, 0.28);
+}
+
+.role-pill.admin,
+.role-pill.role-admin {
+  background: rgba(94, 92, 230, 0.12);
+  color: #5e5ce6;
+  border: 1px solid rgba(94, 92, 230, 0.28);
+}
+
+.role-pill.staff,
+.role-pill.executive,
+.role-pill.role-staff,
+.role-pill.role-executive {
+  background: rgba(191, 90, 242, 0.12);
+  color: #bf5af2;
+  border: 1px solid rgba(191, 90, 242, 0.28);
+}
+
+.role-pill.vip,
+.role-pill.member,
+.role-pill.supplier,
+.role-pill.role-vip,
+.role-pill.role-member,
+.role-pill.role-supplier {
+  background: rgba(48, 209, 88, 0.12);
+  color: #30d158;
+  border: 1px solid rgba(48, 209, 88, 0.28);
+}
+
+.role-pill.public,
+.role-pill.role-public {
+  background: rgba(142, 142, 147, 0.12);
+  color: #8e8e93;
+  border: 1px solid rgba(142, 142, 147, 0.25);
+}
+
+/* Tier Badges for Intent & AI Execution */
+.tier-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 7px;
+  border-radius: 6px;
+  font-family: var(--font-mono);
+}
+
+.tier-badge.tier-intent-1 {
+  background: rgba(191, 90, 242, 0.15);
+  color: #bf5af2;
+  border: 1px solid rgba(191, 90, 242, 0.3);
+}
+
+.tier-badge.tier-intent-2 {
+  background: rgba(10, 132, 255, 0.15);
+  color: #0a84ff;
+  border: 1px solid rgba(10, 132, 255, 0.3);
+}
+
+.tier-badge.tier-full-ai {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-subtle);
+}
+
 /* AI Chips */
 .ai-chips-container {
   display: flex;

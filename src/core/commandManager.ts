@@ -5,6 +5,7 @@ import type { Command, CommandContext, RoleResolution, RoleResolver } from '../t
 import type { SerializedMessage } from './serializer.js';
 import { logger } from '../utils/logger.js';
 import { config } from '../config/index.js';
+import { settingsManager } from '../config/settingsManager.js';
 
 class CommandManager {
   private commands = new Map<string, Command>();
@@ -44,7 +45,17 @@ class CommandManager {
       }
     }
 
-    const isOwner = config.OWNER_NUMBERS.includes(senderNumber) || m.isOwner;
+    // Check dynamic user roles configured via dashboard settings
+    const configuredRoles = settingsManager.getUserRoles();
+    if (configuredRoles[senderNumber]) {
+      const entry = configuredRoles[senderNumber];
+      return {
+        role: entry.role.toUpperCase(),
+        data: { name: entry.name, ...entry.data },
+      };
+    }
+
+    const isOwner = settingsManager.isOwner(senderNumber) || config.OWNER_NUMBERS.includes(senderNumber) || m.isOwner;
     return { role: isOwner ? 'OWNER' : 'PUBLIC' };
   }
 
